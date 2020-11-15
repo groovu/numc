@@ -212,8 +212,8 @@ void alloc_ref_test(void) {
     }
     /* Now we compare the data in the reference matrix */
     deallocate_matrix(from);
-    deallocate_matrix(mat1);
-    deallocate_matrix(mat2);
+    //deallocate_matrix(mat1);
+    //deallocate_matrix(mat2);
 }
 
 /* Test the null case doesn't crash */
