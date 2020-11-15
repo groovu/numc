@@ -71,6 +71,7 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
     (*mat)->cols = cols;
     (*mat)->rows = rows;
     (*mat)->parent = NULL;
+    (*mat)->ref_cnt = 0; //fresh matrix, no kids.
     //what about the rest of the struct?  data, is_1d, ref_cnt?
     return 0;
 
@@ -101,7 +102,10 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int row_offset, int col_offs
     //rows, cols taken care of by allocate_matrix
     (*mat)->parent = from;
     (*mat)->data = NULL; //how do you copy properly with offset?
-    
+
+    //from matrix update
+    from->ref_cnt += 1; //Another matrix is reffing from, so +1 ref count. 
+
     return 0;
 
 
@@ -116,7 +120,12 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int row_offset, int col_offs
  * See the spec for more information.
  */
 void deallocate_matrix(matrix *mat) {
-    /* TODO: YOUR CODE HERE */
+    // only free mat.data if no other matrices are referencing mat.  use a counter on mat?
+    //i have no parent, and my ref == 1 (myself), once I lose my ref ptr, delete self.
+    //i have a parent, 
+
+    //matrix loses all ref's in python.
+    //how do the parents play a role?
 }
 
 /*
