@@ -74,6 +74,11 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
     (*mat)->parent = NULL;
     (*mat)->ref_cnt = 0; //fresh matrix, no kids.
     //what about the rest of the struct?  data, is_1d, ref_cnt?
+    (*mat)->data = (double **) malloc(sizeof(double) * cols * rows);
+    if (NULL == (*mat)->data) {
+        PyErr_SetString(PyExc_MemoryError, "malloc in matrix.c failed for mat->data");
+        return -1;
+    }
     return 0;
 
 
@@ -172,7 +177,10 @@ void deallocate_matrix(matrix *mat) {
  */
 double get(matrix *mat, int row, int col) {
     /* TODO: YOUR CODE HERE */
-    
+    // int index = (mat->cols) * row + col;
+    // double * row_data = mat->data;
+    // double val = row_data[index];
+    // return val;
 }
 
 /*
@@ -181,7 +189,10 @@ double get(matrix *mat, int row, int col) {
  */
 void set(matrix *mat, int row, int col, double val) {
     /* TODO: YOUR CODE HERE */
-    mat
+    int index = (mat->cols) * row + col;
+    double * row_data = mat->data;
+    row_data[index] = val;
+    //*(mat->data[index]) = val;
 }
 
 /*
@@ -189,6 +200,10 @@ void set(matrix *mat, int row, int col, double val) {
  */
 void fill_matrix(matrix *mat, double val) {
     /* TODO: YOUR CODE HERE */
+    int size = mat->rows * mat->cols;
+    for (int i = 0; i < size; i ++) {
+        *(mat->data[i]) = val;
+    }
 }
 
 /*
