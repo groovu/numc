@@ -348,10 +348,20 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
  */
 int pow_matrix(matrix *result, matrix *mat, int pow) {
     /* TODO: YOUR CODE HERE */
-    if (pow == 0) {
-        //return identity matrix?  FIXME
+    if (NULL == mat || NULL == result) {
+        PyErr_SetString(PyExc_TypeError, "pow_matrix null input");
+        return -8;
     }
-    if (pow == 1) {
+    if (mat->rows != mat->cols || result->rows != mat->cols) {
+        PyErr_SetString(PyExc_TypeError, "pow_matrix not square");
+        return -9;
+    }
+    if (pow > 1) {
+        PyErr_SetString(PyExc_TypeError, "pow_matrix negative power");
+        return -10;
+    } else if (pow == 0) {
+        //return identitity?
+    } else if (pow == 1) {
         return mat;
     }
     //error check?  make sure its square?
@@ -371,6 +381,7 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
  */
 int neg_matrix(matrix *result, matrix *mat) {
     /* TODO: YOUR CODE HERE */
+    
 }
 
 /*
