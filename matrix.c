@@ -135,17 +135,20 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int row_offset, int col_offs
     //for y
     //mat[x][y] = from[x+offset][y+offset]?
 //    (*mat)->data[0][0] = from->data[0][0]; 
-    (*mat)->data[0][0] = 0;
+    //(*mat)->data[0][0] = 0;
     //double test = from->data[0][0];
     //from->data[0][0] = 0;
     //printf("\n%d", );
 
 
-    // for (int r = 0; r < rows; r ++) {
-    //     for (int c = 0; c < cols; c ++) {
-    //             (*mat)->data[r][c] = from->data[r+row_offset][c+col_offset];
-    //     }
-    // }
+    for (int r = 0; r < rows; r ++) {
+        for (int c = 0; c < cols; c ++) {
+            double val = 0;
+            val = from->data[r+row_offset][c+col_offset];
+            //val = 5.5;
+            (*mat)->data[r][c] = val;
+        }
+    }
 
     if (rows == 1 || cols == 1) {
         (*mat)->is_1d = 1; //nonzero == 1dim.
@@ -204,6 +207,10 @@ void deallocate_matrix(matrix *mat) {
             free(mat);
         }
     }
+
+    //matrix* test = malloc(sizeof(matrix));
+    // is this enough?  free(mat.data) frees ptrs to row data, do I need to free the (mat.data[i])?
+    //ya valgrind says I alloc as much as I free, but testing shows adding the above line still yields the same results.
     return;
     //idk why this shit is crashing.  try filling in the other fxns first.
 }
@@ -217,10 +224,12 @@ void deallocate_matrix(matrix *mat) {
  */
 double get(matrix *mat, int row, int col) {
     /* TODO: YOUR CODE HERE */
-    // int index = (mat->cols) * row + col;
-    // double * row_data = mat->data;
-    // double val = row_data[index];
-    // return val;
+    //int index = (mat->cols) * row + col;
+    //double * row_data = mat->data;
+    //double val = row_data[index];
+    ////double val = mat->data[row][col];
+    //return val;
+    return mat->data[row][col];
 }
 
 /*
@@ -229,10 +238,12 @@ double get(matrix *mat, int row, int col) {
  */
 void set(matrix *mat, int row, int col, double val) {
     /* TODO: YOUR CODE HERE */
-    int index = (mat->cols) * row + col;
-    double * row_data = mat->data;
-    row_data[index] = val;
+    // int index = (mat->cols) * row + col;
+    // double * row_data = mat->data;
+    // row_data[index] = val;
     //*(mat->data[index]) = val;
+    mat->data[row][col] = val;
+
 }
 
 /*
@@ -240,9 +251,14 @@ void set(matrix *mat, int row, int col, double val) {
  */
 void fill_matrix(matrix *mat, double val) {
     /* TODO: YOUR CODE HERE */
-    int size = mat->rows * mat->cols;
-    for (int i = 0; i < size; i ++) {
-        *(mat->data[i]) = val;
+    // int size = mat->rows * mat->cols;
+    // for (int i = 0; i < size; i ++) {
+    //     *(mat->data[i]) = val;
+    // }
+    for (int r = 0; r < mat->rows; r++) {
+        for (int c = 0; c < mat->cols; c++) {
+            mat->data[r][c] = val;
+        }
     }
 }
 
@@ -251,7 +267,25 @@ void fill_matrix(matrix *mat, double val) {
  * Return 0 upon success and a nonzero value upon failure.
  */
 int add_matrix(matrix *result, matrix *mat1, matrix *mat2) {
-    /* TODO: YOUR CODE HERE */
+    //Error check
+    //dim check
+    //if (mat1->rows != mat2->cols || mat1->cols != mat2->rows) {
+    if (NULL == mat1 || NULL == mat2) {
+        PyErr_SetString(PyExc_TypeError, "add_matrix: null input matrices");
+        return -3;
+    }
+    if (mat1->rows != mat2->rows || mat1->cols != mat2->cols) {
+        PyErr_SetString(PyExc_TypeError, "Mtrx add dimension mismatch error");
+        return -2;
+    }//null check
+
+
+    for (int r = 0; r < result->rows; r++) {
+        for (int c = 0; c < result->cols; c++) {
+            result->data[r][c] = mat1->data[r][c] + mat2->data[r][c];
+        }
+    }
+    return 0;
 }
 
 /*
@@ -260,7 +294,24 @@ int add_matrix(matrix *result, matrix *mat1, matrix *mat2) {
  */
 int sub_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     /* TODO: YOUR CODE HERE */
+    if (NULL == mat1 || NULL == mat2) {
+        PyErr_SetString(PyExc_TypeError, "sub_matrix: null input matrices");
+        return -5;
+    }
+    if (mat1->rows != mat2->rows || mat1->cols != mat2->cols) {
+        PyErr_SetString(PyExc_TypeError, "Mtrx sub dimension mismatch error");
+        return -4;
+    }//null check
+
+
+    for (int r = 0; r < result->rows; r++) {
+        for (int c = 0; c < result->cols; c++) {
+            result->data[r][c] = mat1->data[r][c] - mat2->data[r][c];
+        }
+    }
+    return 0;
 }
+
 
 /*
  * Store the result of multiplying mat1 and mat2 to `result`.
@@ -269,6 +320,25 @@ int sub_matrix(matrix *result, matrix *mat1, matrix *mat2) {
  */
 int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     /* TODO: YOUR CODE HERE */
+    if (NULL == mat1 || NULL == mat2) {
+        PyErr_SetString(PyExc_TypeError, "mul_matrix: null input matrices");
+        return -7;
+    }
+    if (mat1->cols != mat2->rows) {
+        PyErr_SetString(PyExc_TypeError, "Mtrx mul dimension mismatch error");
+        return -6;
+    }
+    for (int r = 0; r < mat1->rows; r++) { //can we assume dims are good?
+        for (int c = 0; c < mat2->cols; c++) {
+            int sum = 0;
+            for (int i = 0; i < mat1->cols; i++) {
+                sum += mat1->data[r][i] * mat2->data[i][c];
+            }
+            result->data[r][c] = sum;
+        }
+    }
+    return 0;
+
 }
 
 /*
@@ -278,6 +348,21 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
  */
 int pow_matrix(matrix *result, matrix *mat, int pow) {
     /* TODO: YOUR CODE HERE */
+    if (pow == 0) {
+        //return identity matrix?  FIXME
+    }
+    if (pow == 1) {
+        return mat;
+    }
+    //error check?  make sure its square?
+    matrix * middle = result; //copies ?
+    //allocate_matrix(&middle, mat->rows, mat->cols);
+    mul_matrix(middle, mat, mat);
+    for (int i = 1; i < pow; i++) {
+        mul_matrix(result, middle, mat);
+        middle = result;
+    }
+    return 0;
 }
 
 /*
