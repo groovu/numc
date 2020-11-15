@@ -12,6 +12,7 @@
 #include <x86intrin.h>
 #endif
 
+int ref = 0;
 /* Below are some intel intrinsics that might be useful
  * void _mm256_storeu_pd (double * mem_addr, __m256d a)
  * __m256d _mm256_set1_pd (double a)
@@ -72,9 +73,11 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
     (*mat)->cols = cols;
     (*mat)->rows = rows;
     (*mat)->parent = NULL;
-    (*mat)->ref_cnt = 1; //fresh matrix, no kids. 1 is needed for sanity tests.
+    //global ref var.  1 passes make tests, 0 does not.
+    (*mat)->ref_cnt = ref; //fresh matrix, no kids. 1 is needed for sanity tests.
     //what about the rest of the struct?  data, is_1d, ref_cnt?
     (*mat)->data = (double **) malloc(sizeof(double) * cols * rows);
+
     if (NULL == (*mat)->data) {
         PyErr_SetString(PyExc_MemoryError, "malloc in matrix.c failed for mat->data");
         return -1;
@@ -107,10 +110,20 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int row_offset, int col_offs
     }
     //rows, cols taken care of by allocate_matrix
     (*mat)->parent = from;
-    (*mat)->data = NULL; //how do you copy properly with offset?
 
     //from matrix update
-    from->ref_cnt += 1; //Another matrix is reffing from, so +1 ref count. 
+    from->ref_cnt += 1; //Another matrix is reffing from, so +1 ref count.
+
+    //data allocate, you can use arr[x][y];
+    //for x
+    //for y
+    //mat[x][y] = from[x+offset][y+offset]?
+//    (*mat)->data[0][0] = from->data[0][0]; 
+    (*mat)->data[0][0] = 0;
+    //double test = from->data[0][0];
+    //from->data[0][0] = 0;
+    //printf("\n%d", );
+
 
     return 0;
 
@@ -146,20 +159,20 @@ void deallocate_matrix(matrix *mat) {
 
     // }
     if (parents == NULL) {
-        if (children > 1) { //FIXME? 0 or 1?
+        if (children > ref) { //FIXME? 0 or 1?
             mat->ref_cnt -= 1;
         }
-        if (children <= 1) {
+        else if (children <= ref) {
             free(mat->data);
             free(mat);
         }
     }
     if (parents != NULL) {
-        if(parents->ref_cnt > 1) {
+        if(parents->ref_cnt > ref) {
             parents->ref_cnt -= 1;
             free(mat);
         }
-        if (parents->ref_cnt <= 1) {
+        else if (parents->ref_cnt <= ref) {
             deallocate_matrix(parents);
             free(mat);
         }

@@ -211,9 +211,11 @@ void alloc_ref_test(void) {
         }
     }
     /* Now we compare the data in the reference matrix */
+    printf("\n refs of from %d", from->ref_cnt);
     deallocate_matrix(from);
-    //deallocate_matrix(mat1);
-    //deallocate_matrix(mat2);
+    printf("\n im out");
+    deallocate_matrix(mat1);
+    deallocate_matrix(mat2);
 }
 
 /* Test the null case doesn't crash */
