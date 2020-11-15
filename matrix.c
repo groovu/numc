@@ -356,7 +356,7 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
         PyErr_SetString(PyExc_TypeError, "pow_matrix not square");
         return -9;
     }
-    if (pow > 1) {
+    if (pow < 1) {
         PyErr_SetString(PyExc_TypeError, "pow_matrix negative power");
         return -10;
     } else if (pow == 0) {
@@ -365,12 +365,13 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
         return mat;
     }
     //error check?  make sure its square?
-    matrix * middle = result; //copies ?
+    //matrix * middle = result; //copies ?
     //allocate_matrix(&middle, mat->rows, mat->cols);
-    mul_matrix(middle, mat, mat);
-    for (int i = 1; i < pow; i++) {
-        mul_matrix(result, middle, mat);
-        middle = result;
+    //mul_matrix(middle, mat, mat);
+    mul_matrix(result, mat, mat);
+    for (int i = 2; i < pow; i++) {
+        mul_matrix(result, result, mat);
+        //middle = result;
     }
     return 0;
 }
@@ -381,7 +382,13 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
  */
 int neg_matrix(matrix *result, matrix *mat) {
     /* TODO: YOUR CODE HERE */
-    
+    //FIXME add error checking.
+    for (int r = 0; r < mat->rows; r++) { //can we assume dims are good?
+        for (int c = 0; c < mat->cols; c++) {
+            result->data[r][c] = mat->data[r][c] * -1;
+        }
+    }
+    return 0;
 }
 
 /*
@@ -390,5 +397,17 @@ int neg_matrix(matrix *result, matrix *mat) {
  */
 int abs_matrix(matrix *result, matrix *mat) {
     /* TODO: YOUR CODE HERE */
+    //FIXME add error checking.
+    for (int r = 0; r < mat->rows; r++) { //can we assume dims are good?
+        for (int c = 0; c < mat->cols; c++) {
+            double matval = mat->data[r][c];
+            if (matval < 0) {
+                matval *= -1;
+            }
+            result->data[r][c] = matval;
+        }
+    }
+    
 }
+
 
