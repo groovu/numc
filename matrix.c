@@ -76,12 +76,29 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
     //global ref var.  1 passes make tests, 0 does not.
     (*mat)->ref_cnt = ref; //fresh matrix, no kids. 1 is needed for sanity tests.
     //what about the rest of the struct?  data, is_1d, ref_cnt?
-    (*mat)->data = (double **) malloc(sizeof(double) * cols * rows);
+    //(*mat)->data = (double **) malloc(sizeof(double) * cols * rows);
 
+    (*mat)->data = (double **) malloc(sizeof(double *) * rows);
     if (NULL == (*mat)->data) {
         PyErr_SetString(PyExc_MemoryError, "malloc in matrix.c failed for mat->data");
         return -1;
     }
+
+    for (int i = 0; i < rows; i += 1) {
+        //(*mat)->data[i] = (double *) malloc(sizeof(double) * cols);
+        double * rowdata = (double *) malloc(sizeof(double) * cols);
+        if (NULL == rowdata) {
+            PyErr_SetString(PyExc_MemoryError, "malloc in matrix.c rowdata");
+            return -1;
+        }
+        (*mat)->data[i] = rowdata;
+    }
+    if (rows == 1 || cols == 1) {
+        (*mat)->is_1d = 1; //nonzero == 1dim.
+    } else {
+        (*mat)->is_1d = 0; //0 == 2 dim.
+    }
+
     return 0;
 
 
@@ -108,9 +125,8 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int row_offset, int col_offs
         PyErr_SetString(PyExc_MemoryError, "allocate_matrix_ref failed to allocate_matrix");
         return -2;
     }
-    //rows, cols taken care of by allocate_matrix
+    //rows, cols, ref count taken care of by allocate_matrix
     (*mat)->parent = from;
-
     //from matrix update
     from->ref_cnt += 1; //Another matrix is reffing from, so +1 ref count.
 
@@ -125,6 +141,17 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int row_offset, int col_offs
     //printf("\n%d", );
 
 
+    // for (int r = 0; r < rows; r ++) {
+    //     for (int c = 0; c < cols; c ++) {
+    //             (*mat)->data[r][c] = from->data[r+row_offset][c+col_offset];
+    //     }
+    // }
+
+    if (rows == 1 || cols == 1) {
+        (*mat)->is_1d = 1; //nonzero == 1dim.
+    } else {
+        (*mat)->is_1d = 0; //0 == 2 dim.
+    }
     return 0;
 
 
@@ -148,35 +175,35 @@ void deallocate_matrix(matrix *mat) {
     if (NULL == mat) {
         return;
     }
-    int children = mat->ref_cnt;
-    matrix* parents = mat->parent;
+    // int children = mat->ref_cnt;
+    // matrix* parents = mat->parent;
 
-    // if (children == 0 && parents == NULL) {
-    //     free(mat->data);
-    //     free(mat);
-    // }
-    // else if (children > 0 && parents == NULL) {
+    // // if (children == 0 && parents == NULL) {
+    // //     free(mat->data);
+    // //     free(mat);
+    // // }
+    // // else if (children > 0 && parents == NULL) {
 
+    // // }
+    // if (parents == NULL) {
+    //     if (children > ref) { //FIXME? 0 or 1?
+    //         mat->ref_cnt -= 1;
+    //     }
+    //     else if (children <= ref) {
+    //         free(mat->data);
+    //         free(mat);
+    //     }
     // }
-    if (parents == NULL) {
-        if (children > ref) { //FIXME? 0 or 1?
-            mat->ref_cnt -= 1;
-        }
-        else if (children <= ref) {
-            free(mat->data);
-            free(mat);
-        }
-    }
-    if (parents != NULL) {
-        if(parents->ref_cnt > ref) {
-            parents->ref_cnt -= 1;
-            free(mat);
-        }
-        else if (parents->ref_cnt <= ref) {
-            deallocate_matrix(parents);
-            free(mat);
-        }
-    }
+    // if (parents != NULL) {
+    //     if(parents->ref_cnt > ref) {
+    //         parents->ref_cnt -= 1;
+    //         free(mat);
+    //     }
+    //     else if (parents->ref_cnt <= ref) {
+    //         deallocate_matrix(parents);
+    //         free(mat);
+    //     }
+    // }
     return;
     //idk why this shit is crashing.  try filling in the other fxns first.
 }
