@@ -175,35 +175,35 @@ void deallocate_matrix(matrix *mat) {
     if (NULL == mat) {
         return;
     }
-    // int children = mat->ref_cnt;
-    // matrix* parents = mat->parent;
+    int children = mat->ref_cnt;
+    matrix* parents = mat->parent;
 
-    // // if (children == 0 && parents == NULL) {
-    // //     free(mat->data);
-    // //     free(mat);
-    // // }
-    // // else if (children > 0 && parents == NULL) {
+    // if (children == 0 && parents == NULL) {
+    //     free(mat->data);
+    //     free(mat);
+    // }
+    // else if (children > 0 && parents == NULL) {
 
-    // // }
-    // if (parents == NULL) {
-    //     if (children > ref) { //FIXME? 0 or 1?
-    //         mat->ref_cnt -= 1;
-    //     }
-    //     else if (children <= ref) {
-    //         free(mat->data);
-    //         free(mat);
-    //     }
     // }
-    // if (parents != NULL) {
-    //     if(parents->ref_cnt > ref) {
-    //         parents->ref_cnt -= 1;
-    //         free(mat);
-    //     }
-    //     else if (parents->ref_cnt <= ref) {
-    //         deallocate_matrix(parents);
-    //         free(mat);
-    //     }
-    // }
+    if (parents == NULL) {
+        if (children > ref) { //FIXME? 0 or 1?
+            mat->ref_cnt -= 1;
+        }
+        else if (children <= ref) {
+            free(mat->data);
+            free(mat);
+        }
+    }
+    if (parents != NULL) {
+        if(parents->ref_cnt > ref) {
+            parents->ref_cnt -= 1;
+            free(mat);
+        }
+        else if (parents->ref_cnt <= ref) {
+            deallocate_matrix(parents);
+            free(mat);
+        }
+    }
     return;
     //idk why this shit is crashing.  try filling in the other fxns first.
 }

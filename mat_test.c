@@ -297,6 +297,8 @@ int main(void) {
     printf("\n\n");
 
     /* Clean up registry and return */
+    prinft("berfore cleanup"); //FIXME?
     CU_cleanup_registry();
+    //printf("after cleanup");
     return CU_get_error();
 }
