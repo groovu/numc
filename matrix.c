@@ -140,7 +140,7 @@ void deallocate_matrix(matrix *mat) {
     // else if (children > 0 && parents == NULL) {
 
     // }
-    if (mat->parent == NULL) {
+    if (parents == NULL) {
         if (children > 0) { //FIXME? 0 or 1?
             mat->ref_cnt -= 1;
         }
@@ -149,17 +149,18 @@ void deallocate_matrix(matrix *mat) {
             free(mat);
         }
     }
-    if (mat->parent != NULL) {
-        if(mat->parent->ref_cnt > 0) {
-            mat->parent->ref_cnt -= 1;
+    if (parents != NULL) {
+        if(parents->ref_cnt > 0) {
+            parents->ref_cnt -= 1;
             free(mat);
         }
-        if (mat->parent->ref_cnt <= 0) {
-            deallocate_matrix(mat->parent);
+        if (parents->ref_cnt <= 0) {
+            deallocate_matrix(parents);
             free(mat);
         }
     }
     return;
+    //idk why this shit is crashing.  try filling in the other fxns first.
 }
     //need a main dealloc to release mat, then a recursive loop on parents to update their ref_cnt.
 
@@ -171,6 +172,7 @@ void deallocate_matrix(matrix *mat) {
  */
 double get(matrix *mat, int row, int col) {
     /* TODO: YOUR CODE HERE */
+    
 }
 
 /*
@@ -179,6 +181,7 @@ double get(matrix *mat, int row, int col) {
  */
 void set(matrix *mat, int row, int col, double val) {
     /* TODO: YOUR CODE HERE */
+    mat
 }
 
 /*
