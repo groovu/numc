@@ -256,3 +256,4 @@ server_basic server_process
 
 .vscode/
 .gitignore
+Makefile

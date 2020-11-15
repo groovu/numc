@@ -58,7 +58,6 @@ void rand_matrix(matrix *result, unsigned int seed, double low, double high) {
  * Return 0 upon success and non-zero upon failure.
  */
 int allocate_matrix(matrix **mat, int rows, int cols) {
-    /* TODO: YOUR CODE HERE */
     //Dimension error check
     if (rows <= 0 || cols <= 0) {
         PyErr_SetString(PyExc_TypeError, "Invalid dims: Row/Col >= 0");
@@ -69,7 +68,11 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
         PyErr_SetString(PyExc_MemoryError, "malloc in matrix.c failed");
         return -1;
     }
-
+    (*mat)->cols = cols;
+    (*mat)->rows = rows;
+    (*mat)->parent = NULL;
+    //what about the rest of the struct?  data, is_1d, ref_cnt?
+    return 0;
 
 
 }
@@ -83,7 +86,26 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
  */
 int allocate_matrix_ref(matrix **mat, matrix *from, int row_offset, int col_offset,
                         int rows, int cols) {
-    /* TODO: YOUR CODE HERE */
+    //dif here is youre making a matrix from a reference matrix.
+    //
+    if (rows <= 0 || cols <= 0) {
+        PyErr_SetString(PyExc_TypeError, "Invalid dims: Row/Col >= 0");
+        return -1;
+    }
+
+    int alloc_error = allocate_matrix(mat, rows, cols);
+    if (alloc_error != 0) {
+        PyErr_SetString(PyExc_MemoryError, "allocate_matrix_ref failed to allocate_matrix");
+        return -2;
+    }
+    //rows, cols taken care of by allocate_matrix
+    (*mat)->parent = from;
+    (*mat)->data = NULL; //how do you copy properly with offset?
+    
+    return 0;
+
+
+
 }
 
 /*
