@@ -140,7 +140,7 @@ void deallocate_matrix(matrix *mat) {
     // else if (children > 0 && parents == NULL) {
 
     // }
-    if (parents == NULL) {
+    if (mat->parent == NULL) {
         if (children > 0) { //FIXME? 0 or 1?
             mat->ref_cnt -= 1;
         }
@@ -149,13 +149,13 @@ void deallocate_matrix(matrix *mat) {
             free(mat);
         }
     }
-    if (parents != NULL) {
-        if(parents->ref_cnt > 0) {
-            parents->ref_cnt -= 1;
+    if (mat->parent != NULL) {
+        if(mat->parent->ref_cnt > 0) {
+            mat->parent->ref_cnt -= 1;
             free(mat);
         }
-        if (parents->ref_cnt <= 0) {
-            deallocate_matrix(parents);
+        if (mat->parent->ref_cnt <= 0) {
+            deallocate_matrix(mat->parent);
             free(mat);
         }
     }
