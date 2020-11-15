@@ -72,7 +72,7 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
     (*mat)->cols = cols;
     (*mat)->rows = rows;
     (*mat)->parent = NULL;
-    (*mat)->ref_cnt = 0; //fresh matrix, no kids.
+    (*mat)->ref_cnt = 1; //fresh matrix, no kids. 1 is needed for sanity tests.
     //what about the rest of the struct?  data, is_1d, ref_cnt?
     (*mat)->data = (double **) malloc(sizeof(double) * cols * rows);
     if (NULL == (*mat)->data) {
@@ -146,20 +146,20 @@ void deallocate_matrix(matrix *mat) {
 
     // }
     if (parents == NULL) {
-        if (children > 0) { //FIXME? 0 or 1?
+        if (children > 1) { //FIXME? 0 or 1?
             mat->ref_cnt -= 1;
         }
-        if (children <= 0) {
+        if (children <= 1) {
             free(mat->data);
             free(mat);
         }
     }
     if (parents != NULL) {
-        if(parents->ref_cnt > 0) {
+        if(parents->ref_cnt > 1) {
             parents->ref_cnt -= 1;
             free(mat);
         }
-        if (parents->ref_cnt <= 0) {
+        if (parents->ref_cnt <= 1) {
             deallocate_matrix(parents);
             free(mat);
         }
