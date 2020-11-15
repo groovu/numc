@@ -59,6 +59,19 @@ void rand_matrix(matrix *result, unsigned int seed, double low, double high) {
  */
 int allocate_matrix(matrix **mat, int rows, int cols) {
     /* TODO: YOUR CODE HERE */
+    //Dimension error check
+    if (rows <= 0 || cols <= 0) {
+        PyErr_SetString(PyExc_TypeError, "Invalid dims: Row/Col >= 0");
+        return -1;
+    }
+    *mat = (matrix *) malloc(sizeof(matrix));
+    if (NULL == *mat) {
+        PyErr_SetString(PyExc_MemoryError, "malloc in matrix.c failed");
+        return -1;
+    }
+
+
+
 }
 
 /*
