@@ -291,7 +291,7 @@ PyObject *Matrix61c_repr(PyObject *self) {
 PyObject *Matrix61c_add(Matrix61c* self, PyObject* args) {
     // add self to args and return.
     //check if args is Matrixtype?
-    if(!(PyObject_TypeCheck(args, &Matrix61cType)) || !(PyObject_TypeCheck(args, &Matrix61cType))) {
+    if(!(PyObject_TypeCheck(args, &Matrix61cType)) || !(PyObject_TypeCheck(self, &Matrix61cType))) {
         PyErr_SetString(PyExc_TypeError, "a or b are not numc.Matrix type");
         return NULL;    
     }
@@ -309,8 +309,8 @@ PyObject *Matrix61c_add(Matrix61c* self, PyObject* args) {
         return NULL;
     }
     rv->shape = get_shape(row, col);
-    int addcode = add_matrix(rv->mat, mat->mat, self->mat);
-    if (addcode > 0) {
+    int code = add_matrix(rv->mat, mat->mat, self->mat);
+    if (code > 0) {
         Matrix61c_dealloc(rv);
         return NULL;
     }
@@ -322,7 +322,30 @@ PyObject *Matrix61c_add(Matrix61c* self, PyObject* args) {
  * self, and the second operand can be obtained by casting `args`.
  */
 PyObject *Matrix61c_sub(Matrix61c* self, PyObject* args) {
-    /* TODO: YOUR CODE HERE */
+    if(!(PyObject_TypeCheck(args, &Matrix61cType)) || !(PyObject_TypeCheck(self, &Matrix61cType))) {
+        PyErr_SetString(PyExc_TypeError, "a or b are not numc.Matrix type");
+        return NULL;    
+    }
+    Matrix61c *mat = (Matrix61c *) args;
+
+    Matrix61c *rv = (Matrix61c *) Matrix61c_new(&Matrix61cType, NULL, NULL);
+    //rv->mat = new_mat?
+    int row = self->mat->rows;
+    int col = self->mat->cols;
+    int rvcode = allocate_matrix(&rv->mat, row, col);
+    //do I need to error check again?
+    if (rvcode == -1) {
+        Matrix61c_dealloc(rv);
+        //from matrix, PyErr_SetString(Py)
+        return NULL;
+    }
+    rv->shape = get_shape(row, col);
+    int code = sub_matrix(rv->mat, mat->mat, self->mat);
+    if (code > 0) {
+        Matrix61c_dealloc(rv);
+        return NULL;
+    }
+    return (PyObject *) rv;
 }
 
 /*
@@ -330,28 +353,127 @@ PyObject *Matrix61c_sub(Matrix61c* self, PyObject* args) {
  * can be obtained by casting `args`.
  */
 PyObject *Matrix61c_multiply(Matrix61c* self, PyObject *args) {
-    /* TODO: YOUR CODE HERE */
+    if(!(PyObject_TypeCheck(args, &Matrix61cType)) || !(PyObject_TypeCheck(self, &Matrix61cType))) {
+        PyErr_SetString(PyExc_TypeError, "a or b are not numc.Matrix type");
+        return NULL;    
+    }
+    Matrix61c *mat = (Matrix61c *) args;
+
+    Matrix61c *rv = (Matrix61c *) Matrix61c_new(&Matrix61cType, NULL, NULL);
+    //rv->mat = new_mat?
+    int row = mat->mat->rows;
+    int col = self->mat->cols;
+    int rvcode = allocate_matrix(&rv->mat, row, col);
+    //do I need to error check again?
+    if (rvcode == -1) {
+        Matrix61c_dealloc(rv);
+        //from matrix, PyErr_SetString(Py)
+        return NULL;
+    }
+    rv->shape = get_shape(row, col);
+    int code = mul_matrix(rv->mat, mat->mat, self->mat);
+    if (code > 0) {
+        Matrix61c_dealloc(rv);
+        return NULL;
+    }
+    return (PyObject *) rv;
 }
 
 /*
  * Negates the given numc.Matrix.
  */
 PyObject *Matrix61c_neg(Matrix61c* self) {
-    /* TODO: YOUR CODE HERE */
+    if(!(PyObject_TypeCheck(self, &Matrix61cType))) {
+        PyErr_SetString(PyExc_TypeError, "a is not numc.Matrix type");
+        return NULL;    
+    }
+    //Matrix61c *mat = (Matrix61c *) args;
+
+    Matrix61c *rv = (Matrix61c *) Matrix61c_new(&Matrix61cType, NULL, NULL);
+    //rv->mat = new_mat?
+    int row = self->mat->rows;
+    int col = self->mat->cols;
+    int rvcode = allocate_matrix(&rv->mat, row, col);
+    //do I need to error check again?
+    if (rvcode == -1) {
+        Matrix61c_dealloc(rv);
+        //from matrix, PyErr_SetString(Py)
+        return NULL;
+    }
+    rv->shape = get_shape(row, col);
+    int code = neg_matrix(rv->mat, self->mat);
+    if (code > 0) {
+        //FIXME what errors could possibly occur with abs and neg?
+        //it modifies a valid matrix in place.  is this correct?
+        Matrix61c_dealloc(rv);
+        return NULL;
+    }
+    return (PyObject *) rv;
 }
 
 /*
  * Take the element-wise absolute value of this numc.Matrix.
  */
 PyObject *Matrix61c_abs(Matrix61c *self) {
-    /* TODO: YOUR CODE HERE */
+    if(!(PyObject_TypeCheck(self, &Matrix61cType))) {
+        PyErr_SetString(PyExc_TypeError, "a is not numc.Matrix type");
+        return NULL;    
+    }
+    //Matrix61c *mat = (Matrix61c *) args;
+
+    Matrix61c *rv = (Matrix61c *) Matrix61c_new(&Matrix61cType, NULL, NULL);
+    //rv->mat = new_mat?
+    int row = self->mat->rows;
+    int col = self->mat->cols;
+    int rvcode = allocate_matrix(&rv->mat, row, col);
+    //do I need to error check again?
+    if (rvcode == -1) {
+        Matrix61c_dealloc(rv);
+        //from matrix, PyErr_SetString(Py)
+        return NULL;
+    }
+    rv->shape = get_shape(row, col);
+    int code = abs_matrix(rv->mat, self->mat);
+    if (code > 0) {
+        //FIXME what errors could possibly occur with abs and neg?
+        //it modifies a valid matrix in place.  is this correct?
+        Matrix61c_dealloc(rv);
+        return NULL;
+    }
+    return (PyObject *) rv;
 }
 
 /*
  * Raise numc.Matrix (Matrix61c) to the `pow`th power. You can ignore the argument `optional`.
  */
 PyObject *Matrix61c_pow(Matrix61c *self, PyObject *pow, PyObject *optional) {
-    /* TODO: YOUR CODE HERE */
+    //FIXME error check pow, how?
+    int power = PyLong_AsLong(pow);
+    if(!(PyObject_TypeCheck(self, &Matrix61cType))) {
+        PyErr_SetString(PyExc_TypeError, "a is not numc.Matrix type");
+        return NULL;    
+    }
+    //Matrix61c *mat = (Matrix61c *) args;
+
+    Matrix61c *rv = (Matrix61c *) Matrix61c_new(&Matrix61cType, NULL, NULL);
+    //rv->mat = new_mat?
+    int row = self->mat->rows;
+    int col = self->mat->cols;
+    int rvcode = allocate_matrix(&rv->mat, row, col);
+    //do I need to error check again?
+    if (rvcode == -1) {
+        Matrix61c_dealloc(rv);
+        //from matrix, PyErr_SetString(Py)
+        return NULL;
+    }
+    rv->shape = get_shape(row, col);
+    int code = pow_matrix(rv->mat, self->mat, power);
+    if (code > 0) {
+        //errors should be set already in matrix.c.  all except abs, neg.
+        Matrix61c_dealloc(rv);
+        return NULL;
+    }
+    return (PyObject *) rv;
 }
 
 /*

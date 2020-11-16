@@ -360,11 +360,13 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
         PyErr_SetString(PyExc_ValueError, "pow_matrix not square");
         return -9;
     }
-    if (pow < 1) {
+    if (pow < 0) {
         PyErr_SetString(PyExc_ValueError, "pow_matrix negative power");
         return -10;
     } else if (pow == 0) {
         //return identitity?
+        PyErr_SetString(PyExc_ValueError, "identity not yet implemented.");
+        return -11;
     } else if (pow == 1) {
         return mat;
     }
