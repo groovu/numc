@@ -67,7 +67,8 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
     }
     *mat = (matrix *) malloc(sizeof(matrix));
     if (NULL == *mat) {
-        PyErr_SetString(PyExc_MemoryError, "malloc in matrix.c failed");
+        PyErr_SetString(PyExc_RuntimeError, "malloc in matrix.c failed");
+        //FIXME free mat?
         return -1;
     }
     (*mat)->cols = cols;
@@ -278,7 +279,7 @@ int add_matrix(matrix *result, matrix *mat1, matrix *mat2) {
         return -3;
     }
     if (mat1->rows != mat2->rows || mat1->cols != mat2->cols) {
-        PyErr_SetString(PyExc_TypeError, "Mtrx add dimension mismatch error");
+        PyErr_SetString(PyExc_ValueError, "Mtrx add dimension mismatch error");
         return -2;
     }//null check
 
@@ -302,7 +303,7 @@ int sub_matrix(matrix *result, matrix *mat1, matrix *mat2) {
         return -5;
     }
     if (mat1->rows != mat2->rows || mat1->cols != mat2->cols) {
-        PyErr_SetString(PyExc_TypeError, "Mtrx sub dimension mismatch error");
+        PyErr_SetString(PyExc_ValueError, "Mtrx sub dimension mismatch error");
         return -4;
     }//null check
 
@@ -328,7 +329,7 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
         return -7;
     }
     if (mat1->cols != mat2->rows) {
-        PyErr_SetString(PyExc_TypeError, "Mtrx mul dimension mismatch error");
+        PyErr_SetString(PyExc_ValueError, "Mtrx mul dimension mismatch error");
         return -6;
     }
     for (int r = 0; r < mat1->rows; r++) { //can we assume dims are good?
@@ -356,11 +357,11 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
         return -8;
     }
     if (mat->rows != mat->cols || result->rows != mat->cols) {
-        PyErr_SetString(PyExc_TypeError, "pow_matrix not square");
+        PyErr_SetString(PyExc_ValueError, "pow_matrix not square");
         return -9;
     }
     if (pow < 1) {
-        PyErr_SetString(PyExc_TypeError, "pow_matrix negative power");
+        PyErr_SetString(PyExc_ValueError, "pow_matrix negative power");
         return -10;
     } else if (pow == 0) {
         //return identitity?

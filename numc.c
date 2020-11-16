@@ -280,13 +280,41 @@ PyObject *Matrix61c_repr(PyObject *self) {
 }
 
 /* NUMBER METHODS */
+//errors:
+//typeerror if invalid dims
+//runtime error if memory allocs fail.
 
 /*
  * Add the second numc.Matrix (Matrix61c) object to the first one. The first operand is
  * self, and the second operand can be obtained by casting `args`.
  */
 PyObject *Matrix61c_add(Matrix61c* self, PyObject* args) {
-    /* TODO: YOUR CODE HERE */
+    // add self to args and return.
+    //check if args is Matrixtype?
+    if(!(PyObject_TypeCheck(args, &Matrix61cType)) || !(PyObject_TypeCheck(args, &Matrix61cType))) {
+        PyErr_SetString(PyExc_TypeError, "a or b are not numc.Matrix type");
+        return NULL;    
+    }
+    Matrix61c *mat = (Matrix61c *) args;
+
+    Matrix61c *rv = (Matrix61c *) Matrix61c_new(&Matrix61cType, NULL, NULL);
+    //rv->mat = new_mat?
+    int row = self->mat->rows;
+    int col = self->mat->cols;
+    int rvcode = allocate_matrix(&rv->mat, row, col);
+    //do I need to error check again?
+    if (rvcode == -1) {
+        Matrix61c_dealloc(rv);
+        //from matrix, PyErr_SetString(Py)
+        return NULL;
+    }
+    rv->shape = get_shape(row, col);
+    int addcode = add_matrix(rv->mat, mat->mat, self->mat);
+    if (addcode > 0) {
+        Matrix61c_dealloc(rv);
+        return NULL;
+    }
+    return (PyObject *) rv;
 }
 
 /*
@@ -331,8 +359,20 @@ PyObject *Matrix61c_pow(Matrix61c *self, PyObject *pow, PyObject *optional) {
  * define. You might find this link helpful: https://docs.python.org/3.6/c-api/typeobj.html
  */
 PyNumberMethods Matrix61c_as_number = {
-    /* TODO: YOUR CODE HERE */
+    //what is this sorcery.  how does it know add is +?
+    (binaryfunc) Matrix61c_add,
+    (binaryfunc) Matrix61c_sub,
+    (binaryfunc) Matrix61c_multiply,
+    NULL,
+    NULL,
+    (ternaryfunc) Matrix61c_pow,
+    (unaryfunc) Matrix61c_neg,
+    NULL,
+    (unaryfunc) Matrix61c_abs
+    
 };
+    // (binaryfunc) Matrix61c_add,
+    // (binaryfunc) Matrix61c_multiply
 
 
 /* INSTANCE METHODS */
