@@ -12,7 +12,7 @@
 #include <x86intrin.h>
 #endif
 
-int ref = 0;
+int ref = 1;
 /* Below are some intel intrinsics that might be useful
  * void _mm256_storeu_pd (double * mem_addr, __m256d a)
  * __m256d _mm256_set1_pd (double a)
@@ -74,7 +74,7 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
     (*mat)->rows = rows;
     (*mat)->parent = NULL;
     //global ref var.  1 passes make tests, 0 does not.
-    (*mat)->ref_cnt = ref; //fresh matrix, no kids. 1 is needed for sanity tests.
+    (*mat)->ref_cnt = ref; //fresh matrix, no kids. 1 is needed for sanity tests. global var
     //what about the rest of the struct?  data, is_1d, ref_cnt?
     //(*mat)->data = (double **) malloc(sizeof(double) * cols * rows);
 
@@ -86,7 +86,7 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
 
     for (int i = 0; i < rows; i += 1) {
         //(*mat)->data[i] = (double *) malloc(sizeof(double) * cols);
-        double * rowdata = (double *) malloc(sizeof(double) * cols);
+        double * rowdata = (double *) calloc(rows * cols, sizeof(double));
         if (NULL == rowdata) {
             PyErr_SetString(PyExc_MemoryError, "malloc in matrix.c rowdata");
             return -1;
@@ -242,8 +242,11 @@ void set(matrix *mat, int row, int col, double val) {
     // double * row_data = mat->data;
     // row_data[index] = val;
     //*(mat->data[index]) = val;
-    mat->data[row][col] = val;
+    double * rowdata = mat->data[row];
+    rowdata[col] = val;
 
+    //mat->data[row][col] = val;
+    return;
 }
 
 /*
@@ -365,13 +368,25 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
         return mat;
     }
     //error check?  make sure its square?
-    //matrix * middle = result; //copies ?
-    //allocate_matrix(&middle, mat->rows, mat->cols);
-    //mul_matrix(middle, mat, mat);
+    // matrix * middle = NULL;
+    // allocate_matrix(&middle, mat->rows, mat->cols);
+    // mul_matrix(middle, mat, mat);
+    // //allocate_matrix(&middle, mat->rows, mat->cols);
+    // //mul_matrix(middle, mat, mat);
+    // //mul_matrix(result, mat, mat);
+    // for (int i = 2; i < pow; i++) {
+    //     mul_matrix(middle, middle, mat);
+    //     //middle = result;
+    // }
+    // result = middle;
     mul_matrix(result, mat, mat);
-    for (int i = 2; i < pow; i++) {
-        mul_matrix(result, result, mat);
-        //middle = result;
+    matrix * middle = NULL;
+
+    //FIXME error check this too
+
+    for (int i = 2; i < pow; i ++) {
+        allocate_matrix_ref(&middle, result, 0, 0, result->rows, result->cols);
+        mul_matrix(result, middle, mat);
     }
     return 0;
 }
