@@ -448,6 +448,10 @@ PyObject *Matrix61c_abs(Matrix61c *self) {
  */
 PyObject *Matrix61c_pow(Matrix61c *self, PyObject *pow, PyObject *optional) {
     //FIXME error check pow, how?
+    if(!(PyObject_Check(pow))) {
+        PyErr_SetString(PyExc_TypeError, "pow is not a PyObject"");
+        return NULL;    
+    }
     int power = PyLong_AsLong(pow);
     if(!(PyObject_TypeCheck(self, &Matrix61cType))) {
         PyErr_SetString(PyExc_TypeError, "a is not numc.Matrix type");
