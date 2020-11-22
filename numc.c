@@ -361,8 +361,8 @@ PyObject *Matrix61c_multiply(Matrix61c* self, PyObject *args) {
 
     Matrix61c *rv = (Matrix61c *) Matrix61c_new(&Matrix61cType, NULL, NULL);
     //rv->mat = new_mat?
-    int row = mat->mat->rows;
-    int col = self->mat->cols;
+    int row = self->mat->rows;
+    int col = mat->mat->cols;
     int rvcode = allocate_matrix(&rv->mat, row, col);
     //do I need to error check again?
     if (rvcode == -1) {
@@ -509,6 +509,7 @@ PyNumberMethods Matrix61c_as_number = {
  */
 PyObject *Matrix61c_set_value(Matrix61c *self, PyObject* args) {
     /* TODO: YOUR CODE HERE */
+    //set(self-mat, row, )
 }
 
 /*
