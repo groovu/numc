@@ -99,7 +99,6 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
     } else {
         (*mat)->is_1d = 0; //0 == 2 dim.
     }
-
     return 0;
 
 
@@ -283,7 +282,6 @@ int add_matrix(matrix *result, matrix *mat1, matrix *mat2) {
         return -2;
     }//null check
 
-
     for (int r = 0; r < result->rows; r++) {
         for (int c = 0; c < result->cols; c++) {
             result->data[r][c] = mat1->data[r][c] + mat2->data[r][c];
@@ -308,9 +306,14 @@ int sub_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     }//null check
 
 
+
     for (int r = 0; r < result->rows; r++) {
         for (int c = 0; c < result->cols; c++) {
-            result->data[r][c] = mat1->data[r][c] - mat2->data[r][c];
+            double mat1_val = mat1->data[r][c];
+            double mat2_val = mat2->data[r][c];
+
+            result->data[r][c] = mat1_val - mat2_val;
+            //printf("wassup bitches");
         }
     }
     return 0;

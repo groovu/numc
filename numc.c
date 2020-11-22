@@ -309,7 +309,7 @@ PyObject *Matrix61c_add(Matrix61c* self, PyObject* args) {
         return NULL;
     }
     rv->shape = get_shape(row, col);
-    int code = add_matrix(rv->mat, mat->mat, self->mat);
+    int code = add_matrix(rv->mat, self->mat, mat->mat);
     if (code > 0) {
         Matrix61c_dealloc(rv);
         return NULL;
@@ -340,7 +340,7 @@ PyObject *Matrix61c_sub(Matrix61c* self, PyObject* args) {
         return NULL;
     }
     rv->shape = get_shape(row, col);
-    int code = sub_matrix(rv->mat, mat->mat, self->mat);
+    int code = sub_matrix(rv->mat, self->mat, mat->mat);
     if (code > 0) {
         Matrix61c_dealloc(rv);
         return NULL;
@@ -371,7 +371,7 @@ PyObject *Matrix61c_multiply(Matrix61c* self, PyObject *args) {
         return NULL;
     }
     rv->shape = get_shape(row, col);
-    int code = mul_matrix(rv->mat, mat->mat, self->mat);
+    int code = mul_matrix(rv->mat, self->mat, mat->mat);
     if (code > 0) {
         Matrix61c_dealloc(rv);
         return NULL;
