@@ -73,7 +73,7 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
     }
     (*mat)->cols = cols;
     (*mat)->rows = rows;
-    printf("rows %d, cols %d\n", rows, cols);
+    //printf("rows %d, cols %d\n", rows, cols);
     (*mat)->parent = NULL;
     //global ref var.  1 passes make tests, 0 does not.
     (*mat)->ref_cnt = ref; //fresh matrix, no kids. 1 is needed for sanity tests. global var
@@ -351,7 +351,7 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
                 sum += mat1->data[r][i] * mat2->data[i][c];
 //                printf("%d %d", r, c);
             }
-            printf("%d %d \n", r, c);
+            //printf("%d %d \n", r, c);
 
             result->data[r][c] = sum;
         }
