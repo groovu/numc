@@ -379,11 +379,41 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
         PyErr_SetString(PyExc_ValueError, "pow_matrix negative power");
         return -10;
     } else if (pow == 0) {
+        printf("power == 0\n");
         //return identitity?
-        PyErr_SetString(PyExc_ValueError, "identity not yet implemented.");
-        return -11;
+        // PyErr_SetString(PyExc_ValueError, "identity not yet implemented.");
+        // return -11;
+        // int alloc_error = allocate_matrix(mat, mat->rows, mat->cols);
+        // if (alloc_error != 0) {
+        //     PyErr_SetString(PyExc_MemoryError, "allocate_matrix_ref failed to allocate_matrix");
+        //     return -2;
+        // }
+        // for (int i = 0; i < mat->cols; i += 1){
+
+        // }
+        fill_matrix(result, 0);
+        for (int i = 0; i < mat->cols; i += 1) {
+            result->data[i][i] = 1;
+        }
+        return 0;
     } else if (pow == 1) {
-        return mat;
+        printf("pow == 1\n");
+        // fill_matrix(result, 0);
+        // allocate_matrix_ref(&result, mat, 0, 0, mat->rows, mat->cols);
+        // matrix * middle = NULL;
+        // printf("mat00 %f", mat->data[0][0]);
+        // allocate_matrix_ref(&middle, mat, 0, 0, mat->rows, mat->cols);
+        // printf("mid00 %f", middle->data[0][0]);
+        // result = middle;
+        // printf("mid00 %f", result->data[0][0]);
+        fill_matrix(result, 0);
+        matrix * middle = NULL;
+        for (int i = 0; i < mat->cols; i += 1) {
+            result->data[i][i] = 1;
+        }
+        allocate_matrix_ref(&middle, result, 0, 0, result->rows, result->cols);
+        mul_matrix(result, middle, mat);
+        return 0;
     }
     //error check?  make sure its square?
     // matrix * middle = NULL;
