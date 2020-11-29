@@ -521,11 +521,12 @@ PyObject *Matrix61c_set_value(Matrix61c *self, PyObject* args) {
     if (PyArg_UnpackTuple(args, "args", 0, 10, &row, &col, &val)) { //FIXME, what are the actual values needed?
         //FIXME if (val != float or int, error.)
         //check here or in matrix.c?
-        if (!PyLong_AsDouble(val)) {
+        //PyFloat_AsDouble(val);
+        if (!PyFloat_AsDouble(val)) {
             PyErr_SetString(PyExc_TypeError, "val is not valid type");
             return -1;
         }
-        set(self->mat, PyLong_AsLong(row), PyLong_AsLong(col), PyLong_AsDouble(val));
+        set(self->mat, PyLong_AsLong(row), PyLong_AsLong(col), PyFloat_AsDouble(val));
         return Py_None;
     } else {
         PyErr_SetString(PyExc_TypeError, "Invalid arguments");

@@ -346,7 +346,7 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     }
     for (int r = 0; r < mat1->rows; r++) { //can we assume dims are good?
         for (int c = 0; c < mat2->cols; c++) {
-            int sum = 0;
+            float sum = 0;
             for (int i = 0; i < mat1->cols; i++) {
                 sum += mat1->data[r][i] * mat2->data[i][c];
 //                printf("%d %d", r, c);
@@ -379,7 +379,6 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
         PyErr_SetString(PyExc_ValueError, "pow_matrix negative power");
         return -10;
     } else if (pow == 0) {
-        printf("power == 0\n");
         //return identitity?
         // PyErr_SetString(PyExc_ValueError, "identity not yet implemented.");
         // return -11;
@@ -397,7 +396,6 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
         }
         return 0;
     } else if (pow == 1) {
-        printf("pow == 1\n");
         // fill_matrix(result, 0);
         // allocate_matrix_ref(&result, mat, 0, 0, mat->rows, mat->cols);
         // matrix * middle = NULL;
