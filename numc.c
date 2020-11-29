@@ -508,8 +508,29 @@ PyNumberMethods Matrix61c_as_number = {
  * Return None in Python (this is different from returning null).
  */
 PyObject *Matrix61c_set_value(Matrix61c *self, PyObject* args) {
-    /* TODO: YOUR CODE HERE */
-    //set(self-mat, row, )
+    //type err if args != 3, or val != float/int.
+    //indexerr ir oor.  taken care of by matrix.c
+    PyObject *row = NULL;
+    PyObject *col = NULL;
+    PyObject *val = NULL;
+    int arg_len = PyObject_Length(args);
+    if (arg_len != 3) { //FIXME, this should catch errors, but I still segfault if I do a.get(x,x,x).
+        PyErr_SetString(PyExc_TypeError, "Incorrect number of arguments.");
+        return -1;
+    }
+    if (PyArg_UnpackTuple(args, "args", 0, 10, &row, &col, &val)) { //FIXME, what are the actual values needed?
+        //FIXME if (val != float or int, error.)
+        //check here or in matrix.c?
+        if (!PyLong_AsDouble(val)) {
+            PyErr_SetString(PyExc_TypeError, "val is not valid type");
+            return -1;
+        }
+        set(self->mat, PyLong_AsLong(row), PyLong_AsLong(col), PyLong_AsDouble(val));
+        return Py_None;
+    } else {
+        PyErr_SetString(PyExc_TypeError, "Invalid arguments");
+        return -1;
+    }
 }
 
 /*
@@ -518,8 +539,27 @@ PyObject *Matrix61c_set_value(Matrix61c *self, PyObject* args) {
  * float/int.
  */
 PyObject *Matrix61c_get_value(Matrix61c *self, PyObject* args) {
-    /* TODO: YOUR CODE HERE */
+    //type err if args len != 2 or wrong types.  (not ints?  can it be more?
+    //index err taken care of matrix.c)
+    PyObject *row = NULL;
+    PyObject *col = NULL;
+    PyObject *val = NULL;
+    int arg_len = PyObject_Length(args);
+    //printf("%d", arg_len);
+    //char *s = PyString_AsString(args);
+    if (arg_len != 2) { //FIXME, this should catch errors, but I still segfault if I do a.get(x,x,x).
+        PyErr_SetString(PyExc_TypeError, "Incorrect number of arguments.");
+        return -1;
+    }
+    if (PyArg_UnpackTuple(args, "args", 2, 2, &row, &col)) {
+        val = PyFloat_FromDouble(get(self->mat, PyLong_AsLong(row), PyLong_AsLong(col)));
+    } else {
+        PyErr_SetString(PyExc_TypeError, "Invalid arguments");
+        return -1;
+    }
+    return val;
 }
+
 
 /*
  * Create an array of PyMethodDef structs to hold the instance methods.
@@ -529,6 +569,8 @@ PyObject *Matrix61c_get_value(Matrix61c *self, PyObject* args) {
  */
 PyMethodDef Matrix61c_methods[] = {
     /* TODO: YOUR CODE HERE */
+    {"set", (PyCFunction) Matrix61c_set_value, METH_VARARGS, NULL},
+    {"get", (PyCFunction) Matrix61c_get_value, METH_VARARGS, NULL},
     {NULL, NULL, 0, NULL}
 };
 

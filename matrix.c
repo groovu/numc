@@ -230,6 +230,10 @@ double get(matrix *mat, int row, int col) {
     //double val = row_data[index];
     ////double val = mat->data[row][col];
     //return val;
+    if (row > mat->rows || col > mat->cols || row < 0 || col < 0) {
+        PyErr_SetString(PyExc_IndexError, "index out of range in get, matrix.c");
+        return -1;
+    }
     return mat->data[row][col];
 }
 
@@ -243,6 +247,10 @@ void set(matrix *mat, int row, int col, double val) {
     // double * row_data = mat->data;
     // row_data[index] = val;
     //*(mat->data[index]) = val;
+    if (row > mat->rows || col > mat->cols || row < 0 || col < 0) {
+        PyErr_SetString(PyExc_IndexError, "index out of range in set, matrix.c");
+        return -1;
+    }
     double * rowdata = mat->data[row];
     rowdata[col] = val;
 
