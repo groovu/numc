@@ -346,7 +346,7 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     }
     for (int r = 0; r < mat1->rows; r++) { //can we assume dims are good?
         for (int c = 0; c < mat2->cols; c++) {
-            float sum = 0;
+            double sum = 0;
             for (int i = 0; i < mat1->cols; i++) {
                 sum += mat1->data[r][i] * mat2->data[i][c];
 //                printf("%d %d", r, c);
