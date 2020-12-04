@@ -82,7 +82,7 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
 
     (*mat)->data = (double **) malloc(sizeof(double *) * rows);
     if (NULL == (*mat)->data) {
-        PyErr_SetString(PyExc_MemoryError, "malloc in matrix.c failed for mat->data");
+        PyErr_SetString(PyExc_RuntimeError, "malloc in matrix.c failed for mat->data");
         return -1;
     }
 
@@ -90,7 +90,7 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
         //(*mat)->data[i] = (double *) malloc(sizeof(double) * cols);
         double * rowdata = (double *) calloc(rows * cols, sizeof(double));
         if (NULL == rowdata) {
-            PyErr_SetString(PyExc_MemoryError, "malloc in matrix.c rowdata");
+            PyErr_SetString(PyExc_RuntimeError, "malloc in matrix.c rowdata");
             return -1;
         }
         (*mat)->data[i] = rowdata;
@@ -123,7 +123,7 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int row_offset, int col_offs
 
     int alloc_error = allocate_matrix(mat, rows, cols);
     if (alloc_error != 0) {
-        PyErr_SetString(PyExc_MemoryError, "allocate_matrix_ref failed to allocate_matrix");
+        PyErr_SetString(PyExc_RuntimeError, "allocate_matrix_ref failed to allocate_matrix");
         return -2;
     }
     //rows, cols, ref count taken care of by allocate_matrix
@@ -135,17 +135,21 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int row_offset, int col_offs
     //for x
     //for y
     //mat[x][y] = from[x+offset][y+offset]?
-//    (*mat)->data[0][0] = from->data[0][0]; 
+    //(*mat)->data[0][0] = from->data[0][0]; 
     //(*mat)->data[0][0] = 0;
     //double test = from->data[0][0];
     //from->data[0][0] = 0;
     //printf("\n%d", );
 
-
+    // for (int r = row_offset; r < rows; r ++) {
+    //     for (int c = col_offset; c < cols; c ++) {
     for (int r = 0; r < rows; r ++) {
-        for (int c = 0; c < cols; c ++) {
+       for (int c = 0; c < cols; c ++) {
             double val = 0;
-            val = from->data[r+row_offset][c+col_offset];
+            //printf("r: %d + ro: %d < %d\n", r, row_offset, rows);
+            //printf("c: %d + co: %d < %d\n", c, col_offset, cols);
+
+            val = from->data[r+ row_offset][c + col_offset];
             //val = 5.5;
             (*mat)->data[r][c] = val;
         }
@@ -157,9 +161,6 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int row_offset, int col_offs
         (*mat)->is_1d = 0; //0 == 2 dim.
     }
     return 0;
-
-
-
 }
 
 /*
@@ -249,7 +250,7 @@ void set(matrix *mat, int row, int col, double val) {
     //*(mat->data[index]) = val;
     if (row > mat->rows || col > mat->cols || row < 0 || col < 0) {
         PyErr_SetString(PyExc_IndexError, "index out of range in set, matrix.c");
-        return -1;
+        return;
     }
     double * rowdata = mat->data[row];
     rowdata[col] = val;
@@ -444,6 +445,10 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
 int neg_matrix(matrix *result, matrix *mat) {
     /* TODO: YOUR CODE HERE */
     //FIXME add error checking.
+    if (NULL == result || NULL == mat) {
+        PyErr_SetString(PyExc_TypeError, "neg_matrix: null matrices");
+        return -11;
+    }
     for (int r = 0; r < mat->rows; r++) { //can we assume dims are good?
         for (int c = 0; c < mat->cols; c++) {
             result->data[r][c] = mat->data[r][c] * -1;
@@ -459,6 +464,10 @@ int neg_matrix(matrix *result, matrix *mat) {
 int abs_matrix(matrix *result, matrix *mat) {
     /* TODO: YOUR CODE HERE */
     //FIXME add error checking.
+    if (NULL == result || NULL == mat) {
+        PyErr_SetString(PyExc_TypeError, "abs_matrix: null matrices");
+        return -12;
+    }
     for (int r = 0; r < mat->rows; r++) { //can we assume dims are good?
         for (int c = 0; c < mat->cols; c++) {
             double matval = mat->data[r][c];
@@ -468,7 +477,7 @@ int abs_matrix(matrix *result, matrix *mat) {
             result->data[r][c] = matval;
         }
     }
-    
+    return 0;
 }
 
 

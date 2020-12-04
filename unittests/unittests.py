@@ -1,5 +1,7 @@
 from utils import *
+
 from unittest import TestCase
+import pdb
 
 """
 For each operation, you should write tests to test  on matrices of different sizes.
@@ -8,6 +10,8 @@ Hint: use dp_mc_matrix to generate dumbpy and numc matrices with the same data a
 """
 class TestAdd(TestCase):
     def test_small_add(self):
+        pdb.set_trace()
+
         # TODO: YOUR CODE HERE
         dp_mat1, nc_mat1 = rand_dp_nc_matrix(2, 2, seed=0)
         dp_mat2, nc_mat2 = rand_dp_nc_matrix(2, 2, seed=1)
@@ -126,3 +130,12 @@ class TestShape(TestCase):
     def test_shape(self):
         dp_mat, nc_mat = rand_dp_nc_matrix(2, 2, seed=0)
         self.assertTrue(dp_mat.shape == nc_mat.shape)
+
+#pdb.set_trace()
+# def main(self):
+#     TestCase().test_small_add()
+#pdb.set_trace()
+# #TestCase().test_small_add()
+# a = TestCase()
+# TestAdd(a).test_small_add()
+TestAdd().test_small_add()
