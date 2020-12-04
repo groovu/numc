@@ -582,124 +582,121 @@ PyMethodDef Matrix61c_methods[] = {
  * Given a numc.Matrix `self`, index into it with `key`. Return the indexed result.
  */
 PyObject *Matrix61c_subscript(Matrix61c* self, PyObject* key) {
-    //2d error check
-        //typeerror if key not int, slice, or length-2 tuple.
-    //1d errcheck
-        //typeerror if key not int or slice.
-    //slice = [0:1], [0:1, 0], [0:0, 0:0] and [0,0] allowed for 2d.
-    //mat[0] returns row 0
-    //mat[0,0] returns row 0 col 0.
-    //mat[0:1, 0] returns rows 0-1, col 1
     PyObject *keyrow = NULL;
     PyObject *keycol = NULL;
     int row = self->mat->rows;
     int col = self->mat->cols;
 
-
-    // int b4col_1dcheck = PyLong_Check(col);
-
-    int dim = 2;
-    PyArg_UnpackTuple(self->shape, "dims",0, 10,&keyrow, &keycol); //FIXME, bootleg using 0 to 10.  what are the actual units?
-    //printf("row %d col %d\n", PyLong_AsLong(row), PyLong_AsLong(col));
-
-    // int row_1dcheck = PyLong_AsLong(row);
-    // int col_1dcheck = PyLong_Check(col);
-    // PyErr_Occurred();
-
-    //int col_1d = PyLong_AsLong(col);
-    //printf("col_1d %ld", col_1dcheck);
-    // if (PyLong_AsLong(row) == -1 || PyLong_AsLong(col) == -1) {
-    //     dim = 1;
-    // } else {
-    //     dim = 2;
-    // }
-    if (keycol == NULL) {
-        //this shit 1d.
+    int dim = 2; //default 2d matrix.
+    PyArg_UnpackTuple(self->shape, "dims",0, 10,&keyrow, &keycol); //FIXME, bootleg 
+    if (keycol == NULL) {// checks if 1d matrix
         dim = 1;
-        //printf("col NULL, tf dim = 1");
     }
-    int slicecheck = PySlice_Check(key);
+    int slicecheck = PySlice_Check(key); //checks what type of key was given.
     int intcheck = PyLong_Check(key);
     int tuplecheck = PyTuple_Check(key);
-    if (intcheck) {
+
+    if (tuplecheck) { //tuple, recursive call to set_subscript for each item.
+        if (PyObject_Length(key) > 2) { //error, too many args in tuple.
+            PyErr_SetString(PyExc_TypeError, "Invalid arguments: Tuple len > 2");
+            return NULL;
+        }
+        if (dim == 1) { //error, no tuples for 1d.
+            PyErr_SetString(PyExc_TypeError, "1D matrices only support single slice!");
+            return NULL;
+        }
+        printf("tuplecheck passed, do stuff here\n");
+        PyObject *item1 = PyTuple_GetItem(key, 0); PyObject *item2 = PyTuple_GetItem(key, 1); 
+        // int test = PySlice_Check(item1);
+        // int test2 = PyLong_Check(item2);
+        // printf("slice? %d\n", test);
+        // printf("int? %d\n", test2);
+        PyObject *res = NULL;
+        // if (PySlice_Check(item1)) {
+        //     res = Matrix61c_subscript(self, key);
+        // } else if (PyLong_Check(item1)) {
+        res = Matrix61c_subscript(self, item1);
+        return Matrix61c_subscript(res, item2);
+        //return Matrix61c_subscript(self, item1);
+        // }
+        //return NULL;
+    }
+
+    if (intcheck) { //if key is int.
+        int index = PyLong_AsLong(key);
         if (dim == 1) {
             PyObject *val = NULL;
-            int col1 = PyLong_AsLong(key);
-            val = PyFloat_FromDouble(get(self->mat, 0, col1));
+            if (index >= col) {
+                PyErr_SetString(PyExc_IndexError, "Index out of range.");
+                return NULL;
+            }
+            val = PyFloat_FromDouble(get(self->mat, 0, index));
             return val;
         }
         //else 2d
+        if (index >= row) {
+            PyErr_SetString(PyExc_IndexError, "Index out of range.");
+            return NULL;
+        }
         Matrix61c *rv = (Matrix61c *) Matrix61c_new(&Matrix61cType, NULL, NULL);
         int rvcode = allocate_matrix_ref(&rv->mat, self->mat, PyLong_AsLong(key), 0, 1, col);
         if (rvcode != 0) {
             PyErr_SetString(PyExc_RuntimeError, "allocate_matrix_ref failed in _subscript");
             return NULL;
         }
-        //to, from, rowoff, coloff, rows, cols)
         rv->shape = get_shape(1, col);
         return (PyObject *) rv;
-
     }
-    if (tuplecheck) {
-        //printf("dims %d:", dim);
-        if (PyObject_Length(key) > 2) {
-            PyErr_SetString(PyExc_TypeError, "Invalid arguments: Tuple len > 2");
-            return NULL;
-        }
-        if (dim == 1) {
-            PyErr_SetString(PyExc_TypeError, "1D matrices only support single slice!");
-            return NULL;
-        }
-        printf("tuplecheck passed, do stuff here");
-        return NULL;
-    }
-    if (slicecheck) {
+    if (slicecheck) { //if key is slice
         Py_ssize_t start = (Py_ssize_t) NULL;
         Py_ssize_t stop = (Py_ssize_t) NULL;
         Py_ssize_t step = (Py_ssize_t) NULL;
-        int sliceinfo = PySlice_Unpack(key, &start, &stop, &step);
+        Py_ssize_t slicelen = (Py_ssize_t) NULL;
+        //int sliceinfo = PySlice_Unpack(key, &start, &stop, &step);
+        int sliceinfo = PySlice_GetIndicesEx(key, col, &start, &stop, &step, &slicelen);
         if (sliceinfo != 0) {
             PyErr_SetString(PyExc_RuntimeError, "failed up unpack slice");
             return NULL;
         }
-        printf("slice start: %ld, stop: %ld, step: %ld", start, stop, step);
+        printf("slice start: %ld, stop: %ld, step: %ld, slicelen: %ld", start, stop, step, slicelen);
         if (step > 1 || start == stop) {
             PyErr_SetString(PyExc_ValueError, "Invalid arguments: Slice starts and ends at same index, or step > 1");
             return NULL;
         }
-        printf("tuplecheck passed, do stuff here");
-        return NULL;
+        if (slicelen == 1) {
+            //if start > stop, just do mat[start]
+            printf("you should just do mat[stop-start]\n");
+        }
+        if (dim == 1) {
+
+            Matrix61c *rv = (Matrix61c *) Matrix61c_new(&Matrix61cType, NULL, NULL);
+            if (start > stop) {
+                start -= 1;
+            }
+            int rvcode = allocate_matrix_ref(&rv->mat, self->mat, 0, start, 1, slicelen);
+            if (rvcode != 0) {
+                PyErr_SetString(PyExc_RuntimeError, "allocate_matrix_ref failed in _subscript");
+                return NULL;
+            }
+        //to, from, rowoff, coloff, rows, cols)
+            rv->shape = get_shape(1, slicelen);
+            return (PyObject *) rv;
+        }
+        //else 2d. jsut grab the rows we need.
+        printf("slicing 2d");
+        Matrix61c *rv = (Matrix61c *) Matrix61c_new(&Matrix61cType, NULL, NULL);
+        int rvcode = allocate_matrix_ref(&rv->mat, self->mat, start, 0, slicelen, col);
+        rv->shape = get_shape(slicelen, col);
+        return rv;
         //if stepsize != 1; value error.
         //if len slice <1; error.
 
     }
-    //if out of range, error.  nope, only for ints.
-    //a[0:99] works on 3x3
 
-    if (PyLong_AsLong(keyrow) == 1 || PyLong_AsLong(keycol) == 1) { //1d array
-        if (tuplecheck) {
-            PyErr_SetString(PyExc_TypeError, "matrix is 1d, but key is tuple.");
-            return NULL;
-        } else if (slicecheck && !intcheck) {
-            //grab slice
-        } else if (!slicecheck && intcheck) {
-            //grab int.
-        }
-    }
-    else if (PyLong_AsLong(keyrow) != 1 && PyLong_AsLong(keycol) != 1) {
-        if (tuplecheck) {
-            //process tuple
-        } else if (slicecheck) {
-
-        } else if (intcheck){
-
-        }
-    }
-    //printf("slice %d, int %d, tuple %d \n", slicecheck, intcheck, tuplecheck);
-    //printf("%d\n", PyList_GetItem(key, 0));
-    //printf("hangs here");
-    return NULL;
+    return NULL; //shouldn't ever reach here.;
 }
+
+
 
 /*
  * Given a numc.Matrix `self`, index into it with `key`, and set the indexed result to `v`.

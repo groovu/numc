@@ -116,6 +116,7 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int row_offset, int col_offs
                         int rows, int cols) {
     //dif here is youre making a matrix from a reference matrix.
     //
+    //printf("ro:%d, co:%d, r:%d, c:%d", row_offset, col_offset, rows, cols);
     if (rows <= 0 || cols <= 0) {
         PyErr_SetString(PyExc_TypeError, "Invalid dims: Row/Col >= 0");
         return -1;
