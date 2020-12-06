@@ -73,19 +73,13 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
     }
     (*mat)->cols = cols;
     (*mat)->rows = rows;
-    //printf("rows %d, cols %d\n", rows, cols);
     (*mat)->parent = NULL;
-    //global ref var.  1 passes make tests, 0 does not.
     (*mat)->ref_cnt = ref; //fresh matrix, no kids. 1 is needed for sanity tests. global var
-    //what about the rest of the struct?  data, is_1d, ref_cnt?
-    //(*mat)->data = (double **) malloc(sizeof(double) * cols * rows);
-
     (*mat)->data = (double **) malloc(sizeof(double *) * rows);
     if (NULL == (*mat)->data) {
         PyErr_SetString(PyExc_RuntimeError, "malloc in matrix.c failed for mat->data");
         return -1;
     }
-
     for (int i = 0; i < rows; i += 1) {
         //(*mat)->data[i] = (double *) malloc(sizeof(double) * cols);
         double * rowdata = (double *) calloc(rows * cols, sizeof(double));
@@ -132,29 +126,64 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int row_offset, int col_offs
     //from matrix update
     from->ref_cnt += 1; //Another matrix is reffing from, so +1 ref count.
 
-    //data allocate, you can use arr[x][y];
-    //for x
-    //for y
-    //mat[x][y] = from[x+offset][y+offset]?
-    //(*mat)->data[0][0] = from->data[0][0]; 
-    //(*mat)->data[0][0] = 0;
-    //double test = from->data[0][0];
-    //from->data[0][0] = 0;
-    //printf("\n%d", );
 
-    // for (int r = row_offset; r < rows; r ++) {
-    //     for (int c = col_offset; c < cols; c ++) {
-    for (int r = 0; r < rows; r ++) {
-       for (int c = 0; c < cols; c ++) {
-            double val = 0;
-            //printf("r: %d + ro: %d < %d\n", r, row_offset, rows);
-            //printf("c: %d + co: %d < %d\n", c, col_offset, cols);
+    // for (int r = 0; r < rows; r ++) {
+    //    for (int c = 0; c < cols; c ++) {
+    //         // double * val = NULL;
+    //         // //printf("r: %d + ro: %d < %d\n", r, row_offset, rows);
+    //         // //printf("c: %d + co: %d < %d\n", c, col_offset, cols);
+    //         // val = &(from->data[r+ row_offset][c + col_offset]);
+    //         // //val = 5.5;
+    //         // (*mat)->data[r][c] = val;
+    //         // //(*mat)->data[r][c] = &(from->data[r+ row_offset][c + col_offset]);
 
-            val = from->data[r+ row_offset][c + col_offset];
-            //val = 5.5;
-            (*mat)->data[r][c] = val;
-        }
+    //         //think about this.  do you need to iterate over all ij?  if you are making a ref.  you can just point to the start of each row, right?  
+    //     }
+    // }
+    
+    //above impl does not point towards original mat.
+    for (int r = 0; r < rows; r += 1) {
+        (*mat)->data[r] = &(from->data[r+row_offset][col_offset]); //from->data[r][c]?
     }
+
+    if (rows == 1 || cols == 1) {
+        (*mat)->is_1d = 1; //nonzero == 1dim.
+    } else {
+        (*mat)->is_1d = 0; //0 == 2 dim.
+    }
+    return 0;
+}
+int allocate_matrix_ref2(matrix **mat, matrix *from, int row_offset, int col_offset,
+                        int rows, int cols)  {
+    //dif here is youre making a matrix from a reference matrix.
+    //
+    //printf("ro:%d, co:%d, r:%d, c:%d", row_offset, col_offset, rows, cols);
+    if (rows <= 0 || cols <= 0) {
+        PyErr_SetString(PyExc_TypeError, "Invalid dims: Row/Col >= 0");
+        return -1;
+    }
+
+    int alloc_error = allocate_matrix(mat, cols, rows);
+    if (alloc_error != 0) {
+        PyErr_SetString(PyExc_RuntimeError, "allocate_matrix_ref failed to allocate_matrix");
+        return -2;
+    }
+    //rows, cols, ref count taken care of by allocate_matrix
+    (*mat)->parent = from;
+    //from matrix update
+    from->ref_cnt += 1; //Another matrix is reffing from, so +1 ref count.
+
+
+    // for (int r = 0; r < rows; r ++) {
+    //    for (int c = 0; c < cols; c ++) {
+    //         double val = 0;
+    //         val = from->data[r+ row_offset][c + col_offset];
+    //         (*mat)->data[c][r] = val;
+    //     }
+    // }
+    // for (int c = 0; c < cols; c += 1) {
+    //     (*mat)->data[c] = &(from->data[r+row_offset][col_offset]); //from->data[r][c]?
+    // }
 
     if (rows == 1 || cols == 1) {
         (*mat)->is_1d = 1; //nonzero == 1dim.
@@ -253,10 +282,10 @@ void set(matrix *mat, int row, int col, double val) {
         PyErr_SetString(PyExc_IndexError, "index out of range in set, matrix.c");
         return;
     }
-    double * rowdata = mat->data[row];
-    rowdata[col] = val;
+    // double * rowdata = mat->data[row];
+    // rowdata[col] = val;
 
-    //mat->data[row][col] = val;
+    mat->data[row][col] = val;
     return;
 }
 

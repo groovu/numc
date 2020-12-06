@@ -510,6 +510,7 @@ PyNumberMethods Matrix61c_as_number = {
 PyObject *Matrix61c_set_value(Matrix61c *self, PyObject* args) {
     //type err if args != 3, or val != float/int.
     //indexerr ir oor.  taken care of by matrix.c
+    printf("setting value \n");
     PyObject *row = NULL;
     PyObject *col = NULL;
     PyObject *val = NULL;
@@ -546,7 +547,7 @@ PyObject *Matrix61c_get_value(Matrix61c *self, PyObject* args) {
     PyObject *col = NULL;
     PyObject *val = NULL;
     int arg_len = PyObject_Length(args);
-    // printf("arg_len %d\n", arg_len);
+    //printf("arg_len %d\n", arg_len);
     //printf("%d", arg_len);
     //char *s = PyString_AsString(args);
     if (arg_len != 2) { //FIXME, this should catch errors, but I still segfault if I do a.get(x,x,x).
@@ -605,28 +606,44 @@ PyObject *Matrix61c_subscript(Matrix61c* self, PyObject* key) {
             PyErr_SetString(PyExc_TypeError, "1D matrices only support single slice!");
             return NULL;
         }
-        printf("tuplecheck passed, do stuff here\n");
         PyObject *item1 = PyTuple_GetItem(key, 0); PyObject *item2 = PyTuple_GetItem(key, 1); 
-        // int test = PySlice_Check(item1);
-        // int test2 = PyLong_Check(item2);
-        // printf("slice? %d\n", test);
-        // printf("int? %d\n", test2);
         PyObject *res = NULL;
-        // if (PySlice_Check(item1)) {
-        //     res = Matrix61c_subscript(self, key);
-        // } else if (PyLong_Check(item1)) {
-        res = Matrix61c_subscript(self, item1);
-        return Matrix61c_subscript(res, item2);
-        //return Matrix61c_subscript(self, item1);
-        // }
-        //return NULL;
-    }
 
+        // res = Matrix61c_subscript(self, item1); 
+        // return Matrix61c_subscript((PyObject *) res, item2);
+
+        //if first tuple is slice, could return matrix.  second select should be along columns.
+        //PyObject *res2 = NULL;
+        res = Matrix61c_subscript(self, item1); 
+        Matrix61c *res2 = (Matrix61c *) Matrix61c_new(&Matrix61cType, NULL, NULL);
+
+        int rows = ((Matrix61c *)res)->mat->rows;
+        int cols = ((Matrix61c *)res)->mat->cols;
+        printf("in tuplecheck, rows: %d, cols: %d\n", rows, cols);
+        //allocate_matrix_ref2(&res2->mat, ((Matrix61c *)res)->mat, 0, 0, rows, cols);
+        //try using allocate_matrix_ref.
+        // PyLong_AsLong(item2)
+        int r_off = 0; //comes from item2
+        int c_off = 1; //comes from item2.
+        
+        //if item2 == int, r_off = 0, c_off = item2?
+
+        allocate_matrix_ref(&res2->mat, ((Matrix61c *)res)->mat, r_off, c_off, cols, rows);
+        res2->shape = get_shape(cols, rows);
+        int a1 = get(res2->mat, 0, 0);
+        int a2 = get(res2->mat, 0, 1);
+        int a3 = get(res2->mat, 1, 0);
+        int a4 = get(res2->mat, 1, 1);
+        printf("res2: %d %d %d %d\n", a1, a2, a3, a4);
+        return Matrix61c_subscript((PyObject *) res2, item2); //problem here. subscript will do row first.
+        //need a way to do columns.  special case for tuples. FUCK
+
+    }
     if (intcheck) { //if key is int.
         int index = PyLong_AsLong(key);
         if (dim == 1) {
             PyObject *val = NULL;
-            if (index >= col) {
+            if (index >= col || index < 0) {
                 PyErr_SetString(PyExc_IndexError, "Index out of range.");
                 return NULL;
             }
@@ -634,7 +651,7 @@ PyObject *Matrix61c_subscript(Matrix61c* self, PyObject* key) {
             return val;
         }
         //else 2d
-        if (index >= row) {
+        if (index >= row || index < 0) {
             PyErr_SetString(PyExc_IndexError, "Index out of range.");
             return NULL;
         }
@@ -658,17 +675,21 @@ PyObject *Matrix61c_subscript(Matrix61c* self, PyObject* key) {
             PyErr_SetString(PyExc_RuntimeError, "failed up unpack slice");
             return NULL;
         }
-        printf("slice start: %ld, stop: %ld, step: %ld, slicelen: %ld", start, stop, step, slicelen);
+        //printf("slice start: %ld, stop: %ld, step: %ld, slicelen: %ld", start, stop, step, slicelen);
         if (step > 1 || start == stop) {
             PyErr_SetString(PyExc_ValueError, "Invalid arguments: Slice starts and ends at same index, or step > 1");
             return NULL;
         }
-        if (slicelen == 1) {
-            //if start > stop, just do mat[start]
-            printf("you should just do mat[stop-start]\n");
+        if (slicelen == 1 && dim == 1) {
+            PyObject *val = NULL;
+            if (start >= col) {
+                PyErr_SetString(PyExc_IndexError, "Index out of range.");
+                return NULL;
+            }
+            val = PyFloat_FromDouble(get(self->mat, 0, start));
+            return val;
         }
         if (dim == 1) {
-
             Matrix61c *rv = (Matrix61c *) Matrix61c_new(&Matrix61cType, NULL, NULL);
             if (start > stop) {
                 start -= 1;
@@ -678,16 +699,15 @@ PyObject *Matrix61c_subscript(Matrix61c* self, PyObject* key) {
                 PyErr_SetString(PyExc_RuntimeError, "allocate_matrix_ref failed in _subscript");
                 return NULL;
             }
-        //to, from, rowoff, coloff, rows, cols)
             rv->shape = get_shape(1, slicelen);
             return (PyObject *) rv;
         }
         //else 2d. jsut grab the rows we need.
-        printf("slicing 2d");
+        //printf("slicing 2d");
         Matrix61c *rv = (Matrix61c *) Matrix61c_new(&Matrix61cType, NULL, NULL);
         int rvcode = allocate_matrix_ref(&rv->mat, self->mat, start, 0, slicelen, col);
         rv->shape = get_shape(slicelen, col);
-        return rv;
+        return (PyObject *) rv;
         //if stepsize != 1; value error.
         //if len slice <1; error.
 
@@ -702,9 +722,96 @@ PyObject *Matrix61c_subscript(Matrix61c* self, PyObject* key) {
  * Given a numc.Matrix `self`, index into it with `key`, and set the indexed result to `v`.
  */
 int Matrix61c_set_subscript(Matrix61c* self, PyObject *key, PyObject *v) {
-    /* TODO: YOUR CODE HERE */
-    printf("not implemented yet");
-    return 0;
+    //so v can be list, nested lists, or an int/float.
+
+    PyObject * rv = NULL;
+    rv = Matrix61c_subscript(self, key); //get slice.
+    int slicecheck = PySlice_Check(key); //checks what type of key was given.
+    int intcheck = PyLong_Check(key);
+    int tuplecheck = PyTuple_Check(key);
+    if (rv == NULL) { //if slice fails, end.
+        PyErr_SetString(PyExc_ValueError, "subscript failed. possibly bad slice in set_sub");
+        return -1;
+    }
+    int isMat = PyObject_TypeCheck(rv, &Matrix61cType); //check if rv is mat, if not, it must have been a float. right?
+    int islist = PyList_Check(v); //check if v is a list.
+    printf("isMat %ld, pyListCheck: %ld\n", isMat, islist);
+    if (islist && !isMat || !islist && isMat) { //matrix can only be updated by list, and single val only updated by val.
+        PyErr_SetString(PyExc_TypeError, "Value is not valid.  Either the rv or v is wrong.");
+        return -1;
+    }
+    //if rv[key] = mat
+        //if mat 1d, v must be 1d list.
+        //if mat 2d, v must be 2d list.
+    //else if rv[key] = val
+        //v must be val.
+
+    if (isMat && islist) { //rv[key] = mat, v = list
+        //yoinked from init_2d; idt it matters what the og matrix is.  as long as rv returns valid.
+        int rvd = ((Matrix61c *)rv)->mat->is_1d; //checks if rv is 1d.
+        //decode key to get start and end indices. FIXME.  updates i to j, instead of 0 to col.
+        //init_2d start
+        printf("rvd: %d\n", rvd);
+        if (rvd == 1) { //rv[key] = 1d
+            //need to check that list is not nested lists. FIXME
+            int rows = 1;
+            int cols = PyList_Size(v); //this makes it redundant. improve?
+            //old or cond: || PyList_Size(v) != self->mat->cols; why?
+            if (rows * cols != PyList_Size(v)  || PyList_Check(PyList_GetItem(v,1)) != 0) { //PyList_checks if v is 2d.
+                //printf("rows %d, cols %d, pylistsize %d\n", rows, cols, PyList_Size(v));
+                PyErr_SetString(PyExc_ValueError, "Incorrect number of elements in list 1d, or v is 2d.");
+                return -1;
+            }
+            int count = 0;
+            for (int i = 0; i < rows; i++) {
+                for (int j = 0; j < cols; j++) {
+                    //I should be updated rv, instead of mat.  updates on rv should be reflected by mat.
+                    //but it's not updating...
+                    printf("before update\n");
+                    printf("og mat %ld, rv mat %ld\n", get(self->mat, i, j), get(((Matrix61c *)rv)->mat,i, j));
+                    set(((Matrix61c *)rv)->mat, i, j, PyFloat_AsDouble(PyList_GetItem(v, count)));
+                    printf("i:%d, j:%d, PyList v:%f\n", i, j, PyFloat_AsDouble(PyList_GetItem(v,count)));
+                    printf("after update\n");
+                    printf("og mat %ld, rv mat %ld", get(self->mat, i, j), get(((Matrix61c *)rv)->mat,i, j));
+                    count++;
+                }
+            }
+            return 0;      
+        }
+        else if (rvd == 0) {//rv = 2d
+            int rows = PyList_Size(v);
+            if (rows == 0) {
+                PyErr_SetString(PyExc_ValueError,
+                                "Cannot initialize numc.Matrix with an empty list");
+                return -1;
+            }
+            int cols;
+            if (!PyList_Check(PyList_GetItem(v, 0))) {
+                PyErr_SetString(PyExc_ValueError, "List values not valid.  v input was 1d");
+                return -1; //errors cause 1d.  need another case.
+            } else {
+                cols = PyList_Size(PyList_GetItem(v, 0));
+            }
+            for (int i = 0; i < rows; i++) {
+                if (!PyList_Check(PyList_GetItem(v, i)) ||
+                        PyList_Size(PyList_GetItem(v, i)) != cols || PyList_Size(PyList_GetItem(v, i)) != self->mat->cols) {
+                    PyErr_SetString(PyExc_ValueError, "List values not valid 2 in 2d");
+                    return -1;
+                }
+            }
+            for (int i = 0; i < rows; i++) {
+                for (int j = 0; j < cols; j++) {
+                    printf("setting\n");
+                    set(((Matrix61c *)rv)->mat, i, j, PyFloat_AsDouble(PyList_GetItem(PyList_GetItem(v, i), j)));            
+                    }
+            }
+            return 0;
+        }
+    }
+    if (!isMat && !islist) {//rv = val, v = val
+
+    }
+    return -1; //should never get herE?
 }
 
 PyMappingMethods Matrix61c_mapping = {

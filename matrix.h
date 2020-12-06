@@ -15,6 +15,8 @@ void rand_matrix(matrix *result, unsigned int seed, double low, double high);
 int allocate_matrix(matrix **mat, int rows, int cols);
 int allocate_matrix_ref(matrix **mat, matrix *from, int row_offset,
                         int col_offset, int rows, int cols);
+int allocate_matrix_ref2(matrix **mat, matrix *from, int row_offset,
+                        int col_offset, int rows, int cols);                        
 void deallocate_matrix(matrix *mat);
 double get(matrix *mat, int row, int col);
 void set(matrix *mat, int row, int col, double val);
