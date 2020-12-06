@@ -608,13 +608,12 @@ PyObject *Matrix61c_subscript(Matrix61c* self, PyObject* key) {
         }
         PyObject *item1 = PyTuple_GetItem(key, 0); PyObject *item2 = PyTuple_GetItem(key, 1); 
         PyObject *res = NULL;
-
-        // res = Matrix61c_subscript(self, item1); 
-        // return Matrix61c_subscript((PyObject *) res, item2);
-
-        //if first tuple is slice, could return matrix.  second select should be along columns.
-        //PyObject *res2 = NULL;
         res = Matrix61c_subscript(self, item1); 
+        if (!PyTuple_Check(item1)) {
+            return Matrix61c_subscript((PyObject *) res, item2);
+        }
+        //if first tuple is slice, could return matrix.  second select should be along columns. 
+        printf("FIXME, tuple with slice not yet done.");
         Matrix61c *res2 = (Matrix61c *) Matrix61c_new(&Matrix61cType, NULL, NULL);
 
         int rows = ((Matrix61c *)res)->mat->rows;
@@ -629,14 +628,8 @@ PyObject *Matrix61c_subscript(Matrix61c* self, PyObject* key) {
         //if item2 == int, r_off = 0, c_off = item2?
 
         allocate_matrix_ref(&res2->mat, ((Matrix61c *)res)->mat, r_off, c_off, cols, rows);
+        //if you can figure this out, you can keep the below.  how do you rotate the matrix?
         res2->shape = get_shape(cols, rows);
-        int a1 = get(res2->mat, 0, 0);
-        int a2 = get(res2->mat, 0, 1);
-        int a3 = get(res2->mat, 1, 0);
-        int a4 = get(res2->mat, 1, 1);
-        printf("res2: %d %d %d %d\n", a1, a2, a3, a4);
-        return Matrix61c_subscript((PyObject *) res2, item2); //problem here. subscript will do row first.
-        //need a way to do columns.  special case for tuples. FUCK
 
     }
     if (intcheck) { //if key is int.

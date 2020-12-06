@@ -10,7 +10,6 @@ Hint: use dp_mc_matrix to generate dumbpy and numc matrices with the same data a
 """
 class TestAdd(TestCase):
     def test_small_add(self):
-        pdb.set_trace()
 
         # TODO: YOUR CODE HERE
         dp_mat1, nc_mat1 = rand_dp_nc_matrix(2, 2, seed=0)
@@ -123,7 +122,7 @@ class TestSet(TestCase):
         dp_mat, nc_mat = rand_dp_nc_matrix(2, 2, seed=0)
         rand_row = np.random.randint(dp_mat.shape[0])
         rand_col = np.random.randint(dp_mat.shape[1])
-        self.assertEquals(round(dp_mat[rand_row][rand_col], decimal_places),
+        self.assertEqual(round(dp_mat[rand_row][rand_col], decimal_places),
             round(nc_mat[rand_row][rand_col], decimal_places))
 
 class TestShape(TestCase):
@@ -138,4 +137,3 @@ class TestShape(TestCase):
 # #TestCase().test_small_add()
 # a = TestCase()
 # TestAdd(a).test_small_add()
-TestAdd().test_small_add()
