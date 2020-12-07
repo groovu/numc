@@ -1,6 +1,7 @@
 import numc as nc
 import dumbpy as dp
 import pdb
+import random
 a = nc.Matrix(2,2,[1.1,2.2,3.3,-4.4])
 b = nc.Matrix(1,3,[1.1,2,-3])
 db = dp.Matrix(1,3,[1,2,-3])
@@ -50,4 +51,19 @@ z[0:2,1] = twoBtwo
 x[0:2,1] = twoBtwo
 print("update to", twoBtwo)
 print("z[0:2,1]==x[0:2,1]", z[0:2,1]==x[0:2,1])
+print("z[0:2,0:1] == x[0:2,0:1]", z[0:2,0:1] == x[0:2,0:1])
 
+rando_list = []
+rows = 100
+cols = 5000
+for i in range(0,rows * cols):
+    n = random.uniform(0,100000)
+    rando_list.append(n)
+
+z = nc.Matrix(rows, cols, rando_list)
+dz = dp.Matrix(rows, cols, rando_list)
+y = nc.Matrix(cols, rows, rando_list)
+dy = dp.Matrix(cols, rows, rando_list)
+
+print(z*y == dz*dy)
+print(y*z == dy*dz)

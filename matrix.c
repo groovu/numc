@@ -76,6 +76,9 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
     (*mat)->parent = NULL;
     (*mat)->ref_cnt = ref; //fresh matrix, no kids. 1 is needed for sanity tests. global var
     (*mat)->data = (double **) malloc(sizeof(double *) * rows);
+
+
+
     if (NULL == (*mat)->data) {
         PyErr_SetString(PyExc_RuntimeError, "malloc in matrix.c failed for mat->data");
         return -1;
@@ -89,6 +92,7 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
         }
         (*mat)->data[i] = rowdata;
     }
+
     if (rows == 1 || cols == 1) {
         (*mat)->is_1d = 1; //nonzero == 1dim.
     } else {
