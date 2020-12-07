@@ -441,10 +441,11 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
         // printf("mid00 %f", result->data[0][0]);
         fill_matrix(result, 0);
         matrix * middle = NULL;
+        allocate_matrix(&middle, mat->rows, mat->cols);
         for (int i = 0; i < mat->cols; i += 1) {
-            result->data[i][i] = 1;
+            middle->data[i][i] = 1;
         }
-        allocate_matrix_ref(&middle, result, 0, 0, result->rows, result->cols);
+        //allocate_matrix_ref(&middle, result, 0, 0, result->rows, result->cols); // ref has changed.  
         mul_matrix(result, middle, mat);
         return 0;
     }

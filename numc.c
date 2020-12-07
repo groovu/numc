@@ -690,9 +690,7 @@ PyObject *Matrix61c_subscript(Matrix61c* self, PyObject* key) {
             //if res is 2d
                 //if item2 slice is 1, ret column/mat.
                 //else grab cols start to stop, return mat.
-
         }
-
     }
     if (intcheck) { //if key is int.
         int index = PyLong_AsLong(key);

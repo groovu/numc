@@ -54,7 +54,7 @@ print("z[0:2,1]==x[0:2,1]", z[0:2,1]==x[0:2,1])
 print("z[0:2,0:1] == x[0:2,0:1]", z[0:2,0:1] == x[0:2,0:1])
 
 rando_list = []
-rows = 100
+rows = 50
 cols = 5000
 for i in range(0,rows * cols):
     n = random.uniform(0,100000)
@@ -65,5 +65,19 @@ dz = dp.Matrix(rows, cols, rando_list)
 y = nc.Matrix(cols, rows, rando_list)
 dy = dp.Matrix(cols, rows, rando_list)
 
-print(z*y == dz*dy)
-print(y*z == dy*dz)
+rando_list2 = []
+for i in range(0, rows  * rows ):
+    rando_list2.append(random.uniform(0,100000))
+
+x = nc.Matrix(rows , rows , rando_list2)
+dx = dp.Matrix(rows , rows , rando_list2)
+
+# print(z*y == dz*dy)
+# print(y*z == dy*dz)
+
+print("is x == dx?", x == dx)
+
+
+for i in range(0, 10):
+    if (x**i != dx**i):
+        print(i)
