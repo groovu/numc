@@ -472,7 +472,7 @@ PyObject *Matrix61c_pow(Matrix61c *self, PyObject *pow, PyObject *optional) {
     }
     rv->shape = get_shape(row, col);
     int code = pow_matrix(rv->mat, self->mat, power);
-    if (code > 0) {
+    if (code < 0) {
         //errors should be set already in matrix.c.  all except abs, neg.
         Matrix61c_dealloc(rv);
         return NULL;
@@ -609,27 +609,35 @@ PyObject *Matrix61c_subscript(Matrix61c* self, PyObject* key) {
         PyObject *item1 = PyTuple_GetItem(key, 0); PyObject *item2 = PyTuple_GetItem(key, 1); 
         PyObject *res = NULL;
         res = Matrix61c_subscript(self, item1); 
-        if (!PyTuple_Check(item1)) {
+        if (!PySlice_Check(item1) ) {
             return Matrix61c_subscript((PyObject *) res, item2);
         }
-        //if first tuple is slice, could return matrix.  second select should be along columns. 
-        printf("FIXME, tuple with slice not yet done.");
-        Matrix61c *res2 = (Matrix61c *) Matrix61c_new(&Matrix61cType, NULL, NULL);
 
-        int rows = ((Matrix61c *)res)->mat->rows;
-        int cols = ((Matrix61c *)res)->mat->cols;
-        printf("in tuplecheck, rows: %d, cols: %d\n", rows, cols);
-        //allocate_matrix_ref2(&res2->mat, ((Matrix61c *)res)->mat, 0, 0, rows, cols);
-        //try using allocate_matrix_ref.
-        // PyLong_AsLong(item2)
-        int r_off = 0; //comes from item2
-        int c_off = 1; //comes from item2.
-        
-        //if item2 == int, r_off = 0, c_off = item2?
+        // printf("FIXME, tuple with slice not yet done.");
+        // Matrix61c *res2 = (Matrix61c *) Matrix61c_new(&Matrix61cType, NULL, NULL);
+        // int rows = ((Matrix61c *)res)->mat->rows;
+        // int cols = ((Matrix61c *)res)->mat->cols;
+        // printf("in tuplecheck, rows: %d, cols: %d\n", rows, cols);
+        // int r_off = 0; //comes from item2
+        // int c_off = 1; //comes from item2.
+        // allocate_matrix_ref(&res2->mat, ((Matrix61c *)res)->mat, r_off, c_off, rows, cols);
+        // res2->shape = get_shape(rows, cols);
+        // return Matrix61c_subscript((PyObject *) res2, item2);
 
-        allocate_matrix_ref(&res2->mat, ((Matrix61c *)res)->mat, r_off, c_off, cols, rows);
-        //if you can figure this out, you can keep the below.  how do you rotate the matrix?
-        res2->shape = get_shape(cols, rows);
+        //mat[slice,int], return column int of slice.
+        //mat[slice,slice], return 
+        // printf("trying tuple mat[slice, int/slice]\n");
+        if (PyLong_Check(item2)) { //return column item2;
+            int col_item = PyLong_AsLong(item2);
+            Matrix61c *rv = (Matrix61c *) Matrix61c_new(&Matrix61cType, NULL, NULL);
+            int rvcode = allocate_matrix_ref(&rv->mat, self->mat, 0, col_item, ((Matrix61c *)res)->mat->rows, 1);
+            if (rvcode != 0) {
+                PyErr_SetString(PyExc_RuntimeError, "allocate_matrix_ref failed in _subscript");
+                return NULL;
+            }
+            rv->shape = get_shape(((Matrix61c *)res)->mat->rows, 1);
+            return (PyObject *) rv;
+        }
 
     }
     if (intcheck) { //if key is int.
@@ -738,7 +746,10 @@ int Matrix61c_set_subscript(Matrix61c* self, PyObject *key, PyObject *v) {
         //if mat 2d, v must be 2d list.
     //else if rv[key] = val
         //v must be val.
-
+    // if (tuplecheck) {
+    //     printf("handle tuples seperately lol");
+    //     return -1;
+    // }
     if (isMat && islist) { //rv[key] = mat, v = list
         //yoinked from init_2d; idt it matters what the og matrix is.  as long as rv returns valid.
         int rvd = ((Matrix61c *)rv)->mat->is_1d; //checks if rv is 1d.
@@ -747,8 +758,8 @@ int Matrix61c_set_subscript(Matrix61c* self, PyObject *key, PyObject *v) {
         printf("rvd: %d\n", rvd);
         if (rvd == 1) { //rv[key] = 1d
             //need to check that list is not nested lists. FIXME
-            int rows = 1;
-            int cols = PyList_Size(v); //this makes it redundant. improve?
+            int rows = ((Matrix61c *)rv)->mat->rows;
+            int cols = ((Matrix61c *)rv)->mat->cols; //this makes it redundant. improve?
             //old or cond: || PyList_Size(v) != self->mat->cols; why?
             if (rows * cols != PyList_Size(v)  || PyList_Check(PyList_GetItem(v,1)) != 0) { //PyList_checks if v is 2d.
                 //printf("rows %d, cols %d, pylistsize %d\n", rows, cols, PyList_Size(v));
@@ -760,12 +771,14 @@ int Matrix61c_set_subscript(Matrix61c* self, PyObject *key, PyObject *v) {
                 for (int j = 0; j < cols; j++) {
                     //I should be updated rv, instead of mat.  updates on rv should be reflected by mat.
                     //but it's not updating...
-                    printf("before update\n");
+                    printf("loop\n");
                     printf("og mat %ld, rv mat %ld\n", get(self->mat, i, j), get(((Matrix61c *)rv)->mat,i, j));
+
                     set(((Matrix61c *)rv)->mat, i, j, PyFloat_AsDouble(PyList_GetItem(v, count)));
+
                     printf("i:%d, j:%d, PyList v:%f\n", i, j, PyFloat_AsDouble(PyList_GetItem(v,count)));
                     printf("after update\n");
-                    printf("og mat %ld, rv mat %ld", get(self->mat, i, j), get(((Matrix61c *)rv)->mat,i, j));
+                    printf("og mat %ld, rv mat %ld\n", get(self->mat, i, j), get(((Matrix61c *)rv)->mat,i, j));
                     count++;
                 }
             }
