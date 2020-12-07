@@ -158,18 +158,17 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int row_offset, int col_offs
     return 0;
 }
 int allocate_matrix_ref2(matrix **mat, matrix *from, int row_offset, int col_offset,
-                        int rows, int cols)  {
+                        int rows, int cols) {
     //dif here is youre making a matrix from a reference matrix.
     //
-    //printf("ro:%d, co:%d, r:%d, c:%d", row_offset, col_offset, rows, cols);
     if (rows <= 0 || cols <= 0) {
         PyErr_SetString(PyExc_TypeError, "Invalid dims: Row/Col >= 0");
         return -1;
     }
 
-    int alloc_error = allocate_matrix(mat, cols, rows);
+    int alloc_error = allocate_matrix(mat, rows, cols);
     if (alloc_error != 0) {
-        PyErr_SetString(PyExc_RuntimeError, "allocate_matrix_ref failed to allocate_matrix");
+        PyErr_SetString(PyExc_MemoryError, "allocate_matrix_ref failed to allocate_matrix");
         return -2;
     }
     //rows, cols, ref count taken care of by allocate_matrix
@@ -177,17 +176,25 @@ int allocate_matrix_ref2(matrix **mat, matrix *from, int row_offset, int col_off
     //from matrix update
     from->ref_cnt += 1; //Another matrix is reffing from, so +1 ref count.
 
+    //data allocate, you can use arr[x][y];
+    //for x
+    //for y
+    //mat[x][y] = from[x+offset][y+offset]?
+//    (*mat)->data[0][0] = from->data[0][0]; 
+    //(*mat)->data[0][0] = 0;
+    //double test = from->data[0][0];
+    //from->data[0][0] = 0;
+    //printf("\n%d", );
 
-    // for (int r = 0; r < rows; r ++) {
-    //    for (int c = 0; c < cols; c ++) {
-    //         double val = 0;
-    //         val = from->data[r+ row_offset][c + col_offset];
-    //         (*mat)->data[c][r] = val;
-    //     }
-    // }
-    // for (int c = 0; c < cols; c += 1) {
-    //     (*mat)->data[c] = &(from->data[r+row_offset][col_offset]); //from->data[r][c]?
-    // }
+
+    for (int r = 0; r < rows; r ++) {
+        for (int c = 0; c < cols; c ++) {
+            double val = 0;
+            val = from->data[r+row_offset][c+col_offset];
+            //val = 5.5;
+            (*mat)->data[r][c] = val;
+        }
+    }
 
     if (rows == 1 || cols == 1) {
         (*mat)->is_1d = 1; //nonzero == 1dim.
@@ -195,6 +202,9 @@ int allocate_matrix_ref2(matrix **mat, matrix *from, int row_offset, int col_off
         (*mat)->is_1d = 0; //0 == 2 dim.
     }
     return 0;
+
+
+
 }
 
 /*
@@ -467,7 +477,7 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
     //FIXME error check this too
 
     for (int i = 2; i < pow; i ++) {
-        allocate_matrix_ref(&middle, result, 0, 0, result->rows, result->cols);
+        allocate_matrix_ref2(&middle, result, 0, 0, result->rows, result->cols);
         mul_matrix(result, middle, mat);
     }
     return 0;

@@ -95,7 +95,22 @@ class TestPow(TestCase):
     def test_small_pow(self):
         # TODO: YOUR CODE HERE
         dp_mat, nc_mat = rand_dp_nc_matrix(2, 2, seed=0)
+        print(dp_mat)
+        print(nc_mat)
+        print(dp_mat**3 == nc_mat**3)
+        print(dp_mat[0][0])
+        print(dp_mat[0][1])
+        dp_mat = dp_mat**3
+        nc_mat = nc_mat**3
+        for i in range(0,2):
+            for j in range(0,2):
+                if dp_mat[i][j] != nc_mat[i][j]:
+                    print(i, j, "dp_mat ", dp_mat[i][j], "nc_mat ", nc_mat[i][j])
+        print("dp**3 == nc **3?", dp_mat == nc_mat)
+        print("0 1", dp_mat[0][1], nc_mat[0][1])
+        print("1 1", dp_mat[1][1], nc_mat[1][1])
         is_correct, speed_up = compute([dp_mat, 3], [nc_mat, 3], "pow")
+        #pdb.set_trace()
         self.assertTrue(is_correct)
         print_speedup(speed_up)
 
