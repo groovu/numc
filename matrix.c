@@ -76,21 +76,29 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
     (*mat)->parent = NULL;
     (*mat)->ref_cnt = ref; //fresh matrix, no kids. 1 is needed for sanity tests. global var
     (*mat)->data = (double **) malloc(sizeof(double *) * rows);
-
+    if ((*mat)->data == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "malloc in matrix.c rowdata");
+        return -1;
+    }
+    (*mat)->data[0] = calloc(rows * cols, sizeof(double));
+    if ((*mat)->data[0] == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "malloc in matrix.c rowdata");
+        return -1;
+    }
 
 
     if (NULL == (*mat)->data) {
         PyErr_SetString(PyExc_RuntimeError, "malloc in matrix.c failed for mat->data");
         return -1;
     }
-    for (int i = 0; i < rows; i += 1) {
+    for (int i = 1; i < rows; i += 1) {
         //(*mat)->data[i] = (double *) malloc(sizeof(double) * cols);
-        double * rowdata = (double *) calloc(rows * cols, sizeof(double));
-        if (NULL == rowdata) {
-            PyErr_SetString(PyExc_RuntimeError, "malloc in matrix.c rowdata");
-            return -1;
-        }
-        (*mat)->data[i] = rowdata;
+        //double * rowdata = (double *) calloc(cols, sizeof(double));
+        // if (NULL == rowdata) {
+        //     PyErr_SetString(PyExc_RuntimeError, "malloc in matrix.c rowdata");
+        //     return -1;
+        // }
+        (*mat)->data[i] = (*mat)->data[i - 1] + cols;
     }
 
     if (rows == 1 || cols == 1) {
@@ -427,53 +435,22 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
         PyErr_SetString(PyExc_ValueError, "pow_matrix negative power");
         return -10;
     } else if (pow == 0) {
-        //return identitity?
-        // PyErr_SetString(PyExc_ValueError, "identity not yet implemented.");
-        // return -11;
-        // int alloc_error = allocate_matrix(mat, mat->rows, mat->cols);
-        // if (alloc_error != 0) {
-        //     PyErr_SetString(PyExc_MemoryError, "allocate_matrix_ref failed to allocate_matrix");
-        //     return -2;
-        // }
-        // for (int i = 0; i < mat->cols; i += 1){
-
-        // }
         fill_matrix(result, 0);
         for (int i = 0; i < mat->cols; i += 1) {
             result->data[i][i] = 1;
         }
         return 0;
     } else if (pow == 1) {
-        // fill_matrix(result, 0);
-        // allocate_matrix_ref(&result, mat, 0, 0, mat->rows, mat->cols);
-        // matrix * middle = NULL;
-        // printf("mat00 %f", mat->data[0][0]);
-        // allocate_matrix_ref(&middle, mat, 0, 0, mat->rows, mat->cols);
-        // printf("mid00 %f", middle->data[0][0]);
-        // result = middle;
-        // printf("mid00 %f", result->data[0][0]);
         fill_matrix(result, 0);
         matrix * middle = NULL;
         allocate_matrix(&middle, mat->rows, mat->cols);
         for (int i = 0; i < mat->cols; i += 1) {
             middle->data[i][i] = 1;
         }
-        //allocate_matrix_ref(&middle, result, 0, 0, result->rows, result->cols); // ref has changed.  
         mul_matrix(result, middle, mat);
         return 0;
     }
-    //error check?  make sure its square?
-    // matrix * middle = NULL;
-    // allocate_matrix(&middle, mat->rows, mat->cols);
-    // mul_matrix(middle, mat, mat);
-    // //allocate_matrix(&middle, mat->rows, mat->cols);
-    // //mul_matrix(middle, mat, mat);
-    // //mul_matrix(result, mat, mat);
-    // for (int i = 2; i < pow; i++) {
-    //     mul_matrix(middle, middle, mat);
-    //     //middle = result;
-    // }
-    // result = middle;
+
     mul_matrix(result, mat, mat);
     matrix * middle = NULL;
 
