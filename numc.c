@@ -591,7 +591,7 @@ PyObject *Matrix61c_subscript(Matrix61c* self, PyObject* key) {
     if (PyArg_UnpackTuple(self->shape, "dims",0, 10,&keyrow, &keycol)) {//unpack tuple.
     } else {
         PyErr_SetString(PyExc_TypeError, "bad args in subscript unpacking tuple1.");
-        return -1;
+        return NULL;
     }
     if (self->mat->is_1d) {  //sorta redundant.  get rid of dim eventually.
         dim = 1;
@@ -612,7 +612,7 @@ PyObject *Matrix61c_subscript(Matrix61c* self, PyObject* key) {
         PyObject *res = NULL;
         res = Matrix61c_subscript(self, item1); 
         if (!PySlice_Check(item1)) {//mat[notslice, blah]
-            return Matrix61c_subscript((PyObject *) res, item2);
+            return Matrix61c_subscript((Matrix61c *) res, item2);
         }
         if (PyLong_Check(item2)) { //return column item2 from slice.;
             int col_item = PyLong_AsLong(item2);
@@ -621,6 +621,7 @@ PyObject *Matrix61c_subscript(Matrix61c* self, PyObject* key) {
             if (rvcode != 0) {
                 PyErr_SetString(PyExc_RuntimeError, "allocate_matrix_ref failed in _subscript");
                 return NULL;
+                //FIXME, you need to free stuff.
             }
             rv->shape = get_shape(((Matrix61c *)res)->mat->rows, 1);
             return (PyObject *) rv;
@@ -629,7 +630,7 @@ PyObject *Matrix61c_subscript(Matrix61c* self, PyObject* key) {
             PyObject *resrow = NULL;
             PyObject *rescol = NULL;
             int dim2 = 2;
-            ((Matrix61c *)res)->shape;
+            //((Matrix61c *)res)->shape;
             PyArg_UnpackTuple(((Matrix61c *)res)->shape, "dims",0, 10,&resrow, &rescol);//unpack res1 shape.
             //FIXME, make above an if statement to error check.
             if (rescol == NULL) {// checks if 1d matrix
@@ -673,9 +674,13 @@ PyObject *Matrix61c_subscript(Matrix61c* self, PyObject* key) {
             }
             Matrix61c *rv = (Matrix61c *) Matrix61c_new(&Matrix61cType, NULL, NULL);
             int rvcode = allocate_matrix_ref(&rv->mat, ((Matrix61c *)res)->mat, 0, start, PyLong_AsLong(resrow), slicelen);
-            rv->shape = get_shape(resrow, slicelen);
+            if (rvcode != 0) {
+                PyErr_SetString(PyExc_RuntimeError, "allocate_matrix_ref failed in subscript 1");
+                return NULL;
+            }
+            rv->shape = get_shape(PyLong_AsLong(resrow), slicelen);
             return (PyObject *) rv;
-            return Matrix61c_subscript((PyObject *) res, item2);
+            return Matrix61c_subscript((Matrix61c *) res, item2);
 
             //CHRIST THIS IS SLOPPY.
             //have res = mat[item1]
@@ -759,6 +764,10 @@ PyObject *Matrix61c_subscript(Matrix61c* self, PyObject* key) {
         //printf("slicing 2d");
         Matrix61c *rv = (Matrix61c *) Matrix61c_new(&Matrix61cType, NULL, NULL);
         int rvcode = allocate_matrix_ref(&rv->mat, self->mat, start, 0, slicelen, col);
+        if (rvcode != 0) {
+            PyErr_SetString(PyExc_RuntimeError, "allocate_matrix_ref failed in _subscript");
+            return NULL;
+            }
         rv->shape = get_shape(slicelen, col);
         return (PyObject *) rv;
         //if stepsize != 1; value error.
@@ -779,9 +788,9 @@ int Matrix61c_set_subscript(Matrix61c* self, PyObject *key, PyObject *v) {
 
     PyObject * rv = NULL;
     rv = Matrix61c_subscript(self, key); //get slice.
-    int slicecheck = PySlice_Check(key); //checks what type of key was given.
-    int intcheck = PyLong_Check(key);
-    int tuplecheck = PyTuple_Check(key);
+    //int slicecheck = PySlice_Check(key); //checks what type of key was given.
+    //int intcheck = PyLong_Check(key);
+    //int tuplecheck = PyTuple_Check(key);
     if (rv == NULL) { //if slice fails, end.
         PyErr_SetString(PyExc_ValueError, "subscript failed. possibly bad slice in set_sub");
         return -1;
@@ -789,7 +798,7 @@ int Matrix61c_set_subscript(Matrix61c* self, PyObject *key, PyObject *v) {
     int isMat = PyObject_TypeCheck(rv, &Matrix61cType); //check if rv is mat, if not, it must have been a float. right?
     int islist = PyList_Check(v); //check if v is a list.
     //printf("isMat %ld, pyListCheck: %ld\n", isMat, islist);
-    if (islist && !isMat || !islist && isMat) { //matrix can only be updated by list, and single val only updated by val.
+    if ((islist && !isMat) || (!islist && isMat)) { //matrix can only be updated by list, and single val only updated by val.
         PyErr_SetString(PyExc_TypeError, "Value is not valid.  Either the rv or v is wrong.");
         return -1;
     }

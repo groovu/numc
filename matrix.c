@@ -324,9 +324,6 @@ void fill_matrix(matrix *mat, double val) {
  * Return 0 upon success and a nonzero value upon failure.
  */
 int add_matrix(matrix *result, matrix *mat1, matrix *mat2) {
-    //Error check
-    //dim check
-    //if (mat1->rows != mat2->cols || mat1->cols != mat2->rows) {
     if (NULL == mat1 || NULL == mat2) {
         PyErr_SetString(PyExc_TypeError, "add_matrix: null input matrices");
         return -3;
@@ -334,13 +331,21 @@ int add_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     if (mat1->rows != mat2->rows || mat1->cols != mat2->cols) {
         PyErr_SetString(PyExc_ValueError, "Mtrx add dimension mismatch error");
         return -2;
-    }//null check
-
+    }
     for (int r = 0; r < result->rows; r++) {
         for (int c = 0; c < result->cols; c++) {
             result->data[r][c] = mat1->data[r][c] + mat2->data[r][c];
         }
     }
+    // int total = mat1->rows * mat1->cols;
+    // #pragma omp parallel for
+    // // for (int i = 0; i < total / 32 * 32; i += 32) {
+    // //     int j = i;
+    // //     _m
+    // // }
+    // for (int i = 0; i < total; i ++) {
+    //     result->data[i] = mat1->data[i] + mat2->data[i];
+    // }
     return 0;
 }
 
@@ -389,15 +394,13 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
         PyErr_SetString(PyExc_ValueError, "Mtrx mul dimension mismatch error");
         return -6;
     }
+    //#pragma omp parallel
     for (int r = 0; r < mat1->rows; r++) { //can we assume dims are good?
         for (int c = 0; c < mat2->cols; c++) {
             double sum = 0;
             for (int i = 0; i < mat1->cols; i++) {
                 sum += mat1->data[r][i] * mat2->data[i][c];
-//                printf("%d %d", r, c);
             }
-            //printf("%d %d \n", r, c);
-
             result->data[r][c] = sum;
         }
     }
