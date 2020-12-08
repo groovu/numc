@@ -120,9 +120,6 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
  */
 int allocate_matrix_ref(matrix **mat, matrix *from, int row_offset, int col_offset,
                         int rows, int cols) {
-    //dif here is youre making a matrix from a reference matrix.
-    //
-    //printf("ro:%d, co:%d, r:%d, c:%d", row_offset, col_offset, rows, cols);
     if (rows <= 0 || cols <= 0) {
         PyErr_SetString(PyExc_TypeError, "Invalid dims: Row/Col >= 0");
         return -1;
@@ -133,31 +130,11 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int row_offset, int col_offs
         PyErr_SetString(PyExc_RuntimeError, "allocate_matrix_ref failed to allocate_matrix");
         return -2;
     }
-    //rows, cols, ref count taken care of by allocate_matrix
     (*mat)->parent = from;
-    //from matrix update
     from->ref_cnt += 1; //Another matrix is reffing from, so +1 ref count.
-
-
-    // for (int r = 0; r < rows; r ++) {
-    //    for (int c = 0; c < cols; c ++) {
-    //         // double * val = NULL;
-    //         // //printf("r: %d + ro: %d < %d\n", r, row_offset, rows);
-    //         // //printf("c: %d + co: %d < %d\n", c, col_offset, cols);
-    //         // val = &(from->data[r+ row_offset][c + col_offset]);
-    //         // //val = 5.5;
-    //         // (*mat)->data[r][c] = val;
-    //         // //(*mat)->data[r][c] = &(from->data[r+ row_offset][c + col_offset]);
-
-    //         //think about this.  do you need to iterate over all ij?  if you are making a ref.  you can just point to the start of each row, right?  
-    //     }
-    // }
-    
-    //above impl does not point towards original mat.
     for (int r = 0; r < rows; r += 1) {
         (*mat)->data[r] = &(from->data[r+row_offset][col_offset]); //from->data[r][c]?
     }
-
     if (rows == 1 || cols == 1) {
         (*mat)->is_1d = 1; //nonzero == 1dim.
     } else {
@@ -179,40 +156,21 @@ int allocate_matrix_ref2(matrix **mat, matrix *from, int row_offset, int col_off
         PyErr_SetString(PyExc_MemoryError, "allocate_matrix_ref failed to allocate_matrix");
         return -2;
     }
-    //rows, cols, ref count taken care of by allocate_matrix
     (*mat)->parent = from;
-    //from matrix update
     from->ref_cnt += 1; //Another matrix is reffing from, so +1 ref count.
-
-    //data allocate, you can use arr[x][y];
-    //for x
-    //for y
-    //mat[x][y] = from[x+offset][y+offset]?
-//    (*mat)->data[0][0] = from->data[0][0]; 
-    //(*mat)->data[0][0] = 0;
-    //double test = from->data[0][0];
-    //from->data[0][0] = 0;
-    //printf("\n%d", );
-
-
     for (int r = 0; r < rows; r ++) {
         for (int c = 0; c < cols; c ++) {
             double val = 0;
             val = from->data[r+row_offset][c+col_offset];
-            //val = 5.5;
             (*mat)->data[r][c] = val;
         }
     }
-
     if (rows == 1 || cols == 1) {
         (*mat)->is_1d = 1; //nonzero == 1dim.
     } else {
         (*mat)->is_1d = 0; //0 == 2 dim.
     }
     return 0;
-
-
-
 }
 
 /*
@@ -223,25 +181,11 @@ int allocate_matrix_ref2(matrix **mat, matrix *from, int row_offset, int col_off
  * See the spec for more information.
  */
 void deallocate_matrix(matrix *mat) {
-    // only free mat.data if no other matrices are referencing mat.  use a counter on mat?
-    //i have no parent, and my ref == 1 (myself), once I lose my ref ptr, delete self.
-    //i have a parent, 
-
-    //matrix loses all ref's in python.
-    //how do the parents play a role?
     if (NULL == mat) {
         return;
     }
     int children = mat->ref_cnt;
     matrix* parents = mat->parent;
-
-    // if (children == 0 && parents == NULL) {
-    //     free(mat->data);
-    //     free(mat);
-    // }
-    // else if (children > 0 && parents == NULL) {
-
-    // }
     if (parents == NULL) {
         if (children > ref) { //FIXME? 0 or 1?
             mat->ref_cnt -= 1;
@@ -261,14 +205,8 @@ void deallocate_matrix(matrix *mat) {
             free(mat);
         }
     }
-
-    //matrix* test = malloc(sizeof(matrix));
-    // is this enough?  free(mat.data) frees ptrs to row data, do I need to free the (mat.data[i])?
-    //ya valgrind says I alloc as much as I free, but testing shows adding the above line still yields the same results.
     return;
-    //idk why this shit is crashing.  try filling in the other fxns first.
 }
-    //need a main dealloc to release mat, then a recursive loop on parents to update their ref_cnt.
 
 
 
@@ -277,12 +215,6 @@ void deallocate_matrix(matrix *mat) {
  * You may assume `row` and `col` are valid.
  */
 double get(matrix *mat, int row, int col) {
-    /* TODO: YOUR CODE HERE */
-    //int index = (mat->cols) * row + col;
-    //double * row_data = mat->data;
-    //double val = row_data[index];
-    ////double val = mat->data[row][col];
-    //return val;
     if (row > mat->rows || col > mat->cols || row < 0 || col < 0) {
         PyErr_SetString(PyExc_IndexError, "index out of range in get, matrix.c");
         return -1;
@@ -295,18 +227,10 @@ double get(matrix *mat, int row, int col) {
  * `col` are valid
  */
 void set(matrix *mat, int row, int col, double val) {
-    /* TODO: YOUR CODE HERE */
-    // int index = (mat->cols) * row + col;
-    // double * row_data = mat->data;
-    // row_data[index] = val;
-    //*(mat->data[index]) = val;
     if (row > mat->rows || col > mat->cols || row < 0 || col < 0) {
         PyErr_SetString(PyExc_IndexError, "index out of range in set, matrix.c");
         return;
     }
-    // double * rowdata = mat->data[row];
-    // rowdata[col] = val;
-
     mat->data[row][col] = val;
     return;
 }
@@ -315,11 +239,6 @@ void set(matrix *mat, int row, int col, double val) {
  * Set all entries in mat to val
  */
 void fill_matrix(matrix *mat, double val) {
-    /* TODO: YOUR CODE HERE */
-    // int size = mat->rows * mat->cols;
-    // for (int i = 0; i < size; i ++) {
-    //     *(mat->data[i]) = val;
-    // }
     for (int r = 0; r < mat->rows; r++) {
         for (int c = 0; c < mat->cols; c++) {
             mat->data[r][c] = val;
@@ -403,13 +322,27 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
         return -6;
     }
     //#pragma omp parallel
-    for (int r = 0; r < mat1->rows; r++) { //can we assume dims are good?
-        for (int c = 0; c < mat2->cols; c++) {
-            double sum = 0;
-            for (int i = 0; i < mat1->cols; i++) {
-                sum += mat1->data[r][i] * mat2->data[i][c];
+    // for (int r = 0; r < mat1->rows; r++) { //can we assume dims are good?
+    //     for (int c = 0; c < mat2->cols; c++) {
+    //         double sum = 0;
+    //         for (int i = 0; i < mat1->cols; i++) {
+    //             sum += mat1->data[r][i] * mat2->data[i][c];
+    //         }
+    //         result->data[r][c] = sum;
+    //     }
+    // }
+
+    //ikj pure row
+    fill_matrix(result, 0);
+    for (int i = 0; i < mat1->rows; i ++) {
+        double * mat1Row = mat1->data[i];
+        double * resRow = result->data[i];
+        for (int k = 0; k < mat1->rows; k ++) {
+            double * mat2Row = mat2->data[k];
+            double mat1Val = mat1Row[k];
+            for (int j = 0; j < mat1->rows; j ++) {
+                resRow[j] += mat1Val * mat2Row[j];
             }
-            result->data[r][c] = sum;
         }
     }
     return 0;
