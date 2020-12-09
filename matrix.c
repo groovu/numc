@@ -483,20 +483,19 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
         int total = rows * cols;
         matrix * temp = NULL;
         allocate_matrix(&temp, rows, cols);
-        for (int i = 0; i < total; i += 1) { // copy result to temp
-            temp->data[0][i] = result->data[0][i];
-        }
+        // for (int i = 0; i < total; i += 1) { // copy result to temp
+        //     temp->data[0][i] = result->data[0][i];
+        // }
+        omp_set_num_threads(4);
         for (int i = 2; i < pow; i ++) {
+            #pragma omp parallel for
             for (int i = 0; i < total; i += 1) { // copy result to temp
                 temp->data[0][i] = result->data[0][i];
             }
             mul_matrix(result, temp, mat);
         }
-            //temp matrix or just temp data struct?
-            //mul(result, mat, mat) //pow2
-            //from i = 3 to pow_num
-            //  copy result to temp.
-            //  mul(result, temp, mat)
+        omp_set_num_threads(8);
+
         deallocate_matrix(temp);
     }
 
