@@ -310,7 +310,7 @@ PyObject *Matrix61c_add(Matrix61c* self, PyObject* args) {
     }
     rv->shape = get_shape(row, col);
     int code = add_matrix(rv->mat, self->mat, mat->mat);
-    if (code > 0) {
+    if (code != 0) {
         Matrix61c_dealloc(rv);
         return NULL;
     }
@@ -341,7 +341,7 @@ PyObject *Matrix61c_sub(Matrix61c* self, PyObject* args) {
     }
     rv->shape = get_shape(row, col);
     int code = sub_matrix(rv->mat, self->mat, mat->mat);
-    if (code > 0) {
+    if (code != 0) {
         Matrix61c_dealloc(rv);
         return NULL;
     }
@@ -402,7 +402,7 @@ PyObject *Matrix61c_neg(Matrix61c* self) {
     }
     rv->shape = get_shape(row, col);
     int code = neg_matrix(rv->mat, self->mat);
-    if (code > 0) {
+    if (code != 0) {
         //FIXME what errors could possibly occur with abs and neg?
         //it modifies a valid matrix in place.  is this correct?
         Matrix61c_dealloc(rv);
@@ -434,7 +434,7 @@ PyObject *Matrix61c_abs(Matrix61c *self) {
     }
     rv->shape = get_shape(row, col);
     int code = abs_matrix(rv->mat, self->mat);
-    if (code > 0) {
+    if (code != 0) {
         //FIXME what errors could possibly occur with abs and neg?
         //it modifies a valid matrix in place.  is this correct?
         Matrix61c_dealloc(rv);

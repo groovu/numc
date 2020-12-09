@@ -92,12 +92,6 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
         return -1;
     }
     for (int i = 1; i < rows; i += 1) {
-        //(*mat)->data[i] = (double *) malloc(sizeof(double) * cols);
-        //double * rowdata = (double *) calloc(cols, sizeof(double));
-        // if (NULL == rowdata) {
-        //     PyErr_SetString(PyExc_RuntimeError, "malloc in matrix.c rowdata");
-        //     return -1;
-        // }
         (*mat)->data[i] = (*mat)->data[i - 1] + cols;
     }
 
@@ -132,6 +126,7 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int row_offset, int col_offs
     }
     (*mat)->parent = from;
     from->ref_cnt += 1; //Another matrix is reffing from, so +1 ref count.
+    free((*mat)->data[0]); //I don't need the calloc here.
     for (int r = 0; r < rows; r += 1) {
         (*mat)->data[r] = &(from->data[r+row_offset][col_offset]); //from->data[r][c]?
     }
@@ -209,6 +204,26 @@ void deallocate_matrix(matrix *mat) {
             free(mat);
         }
     }
+    
+    // if (mat == NULL) {
+    //     return;
+    // }
+    // if (mat->parent == NULL) {
+    //     if (mat->ref_cnt <= 1) {
+    //         free(mat->data[0]);
+    //         free(mat->data);
+    //         free(mat);
+    //     } else if (mat->ref_cnt > 1) {
+    //         mat->ref_cnt -= 1;
+    //     } else {
+    //         mat->parent->ref_cnt -= 1;
+    //         if (mat->parent->ref_cnt == 0) {
+    //             deallocate_matrix(mat->parent);
+    //         }
+    //         free(mat->data);
+    //         free(mat);
+    //     }
+    // }
     return;
 }
 
@@ -265,6 +280,7 @@ int add_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     int count = 16;
     int unroll = total / count * count;
     if (total < 10001) {
+        //#pragma omp parallel for
         for (int i = 0; i < mat1->rows * mat1->cols; i += 1) {
             result->data[0][i] = mat1->data[0][i] + mat2->data[0][i];
         }
@@ -329,13 +345,35 @@ int sub_matrix(matrix *result, matrix *mat1, matrix *mat2) {
         return -4;
     }//null check
     int total = mat1->rows * mat1->cols;
+    int count = 16;
+    int unroll = total / count * count;
     if (total < 10001) {
-        for (int i = 0; i < total; i += 1) {
+        //#pragma omp parallel for
+        for (int i = 0; i < mat1->rows * mat1->cols; i += 1) {
             result->data[0][i] = mat1->data[0][i] - mat2->data[0][i];
         }
     } else {
         #pragma omp parallel for
-        for (int i = 0; i < total; i += 1) {
+        for (int i = 0; i < unroll; i += count) {
+            int j = 0;
+            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j+=1;
+        }
+        for (int i = unroll; i < total; i += 1) {
             result->data[0][i] = mat1->data[0][i] - mat2->data[0][i];
         }
     }
@@ -419,6 +457,7 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
     }
     if (pow == 0) {
         fill_matrix(result, 0);
+        #pragma omp parallel for
         for (int i = 0; i < mat->cols; i += 1) {
             result->data[i][i] = 1;
         }
@@ -427,54 +466,69 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
         //fill_matrix(result, 0);
         matrix * middle = NULL;
         allocate_matrix(&middle, mat->rows, mat->cols);
+        #pragma omp parallel for
         for (int i = 0; i < mat->cols; i += 1) {
             middle->data[i][i] = 1;
         }
         mul_matrix(result, middle, mat);
         deallocate_matrix(middle);
         return 0;
+    } else if (pow == 2) {
+        mul_matrix(result, mat, mat);
+        return 0;
+    } else if (pow > 2) {
+        //FIXME error check this too
+        mul_matrix(result, mat, mat);
+        int rows = mat->rows; int cols = mat->cols;
+        int total = rows * cols;
+        matrix * temp = NULL;
+        allocate_matrix(&temp, rows, cols);
+        for (int i = 0; i < total; i += 1) { // copy result to temp
+            temp->data[0][i] = result->data[0][i];
+        }
+        for (int i = 2; i < pow; i ++) {
+            for (int i = 0; i < total; i += 1) { // copy result to temp
+                temp->data[0][i] = result->data[0][i];
+            }
+            mul_matrix(result, temp, mat);
+        }
+            //temp matrix or just temp data struct?
+            //mul(result, mat, mat) //pow2
+            //from i = 3 to pow_num
+            //  copy result to temp.
+            //  mul(result, temp, mat)
+        deallocate_matrix(temp);
     }
-    mul_matrix(result, mat, mat); //pow 2.
-    matrix * middle = NULL;
-    //FIXME error check this too
 
-    //I could just use ref2 once, then reuse old ref.  ref2 is needed to deep copy a working matrix.
-    //allocate_matrix_ref2(&middle, result, 0, 0, result->rows, result->cols);
-    //#pragma omp parallel for
-    for (int i = 2; i < pow; i ++) {
-        allocate_matrix_ref2(&middle, result, 0, 0, result->rows, result->cols);
-        mul_matrix(result, middle, mat);
-        deallocate_matrix(middle);
-    }
     return 0;
 }
 
 
-int pow_matrix2(matrix *result, matrix *mat, int pow) {
-    if (NULL == mat || NULL == result) {
-        PyErr_SetString(PyExc_TypeError, "pow_matrix null input");
-        return -8;
-    }
-    if (mat->rows != mat->cols || result->rows != mat->cols || pow < 0) {
-        PyErr_SetString(PyExc_ValueError, "pow_matrix not square or power < 0");
-        return -9;
-    }
+// int pow_matrix2(matrix *result, matrix *mat, int pow) {
+//     if (NULL == mat || NULL == result) {
+//         PyErr_SetString(PyExc_TypeError, "pow_matrix null input");
+//         return -8;
+//     }
+//     if (mat->rows != mat->cols || result->rows != mat->cols || pow < 0) {
+//         PyErr_SetString(PyExc_ValueError, "pow_matrix not square or power < 0");
+//         return -9;
+//     }
     
-    if (pow == 0) { //return identity.
-        fill_matrix(result, 0);
-        for (int i = 0; i < mat->cols; i += 1) {
-            result->data[i][i] = 1;
-        }
-        return 0;
-    }
-    if (pow == 1) { //place mat into res.
-        allocate_matrix_ref(&result, mat, 0, 0, mat->rows, mat->cols);
-        return 0;
-    }
-    if (pow > 1) {
+//     if (pow == 0) { //return identity.
+//         fill_matrix(result, 0);
+//         for (int i = 0; i < mat->cols; i += 1) {
+//             result->data[i][i] = 1;
+//         }
+//         return 0;
+//     }
+//     if (pow == 1) { //place mat into res.
+//         allocate_matrix_ref(&result, mat, 0, 0, mat->rows, mat->cols);
+//         return 0;
+//     }
+//     if (pow > 1) {
 
-    }
-}
+//     }
+// }
 /*
  * Store the result of element-wise negating mat's entries to `result`.
  * Return 0 upon success and a nonzero value upon failure.
@@ -495,30 +549,11 @@ int neg_matrix(matrix *result, matrix *mat) {
     int count = 16;
     int unroll = total / count * count;
     if (total < 10001) {//without omp
-        for (int i = 0; i < unroll; i += count) {
-            result->data[0][i] = -mat->data[0][i];
-            result->data[0][i+1] = -mat->data[0][i+1];
-            result->data[0][i+2] = -mat->data[0][i+2];
-            result->data[0][i+3] = -mat->data[0][i+3];
-            result->data[0][i+4] = -mat->data[0][i+4];
-            result->data[0][i+5] = -mat->data[0][i+5];
-            result->data[0][i+6] = -mat->data[0][i+6];
-            result->data[0][i+7] = -mat->data[0][i+7];
-            result->data[0][i+8 ] = -mat->data[0][i+8 ];
-            result->data[0][i+9 ] = -mat->data[0][i+9 ];
-            result->data[0][i+10] = -mat->data[0][i+10];
-            result->data[0][i+11] = -mat->data[0][i+11];
-            result->data[0][i+12] = -mat->data[0][i+12];
-            result->data[0][i+13] = -mat->data[0][i+13];
-            result->data[0][i+14] = -mat->data[0][i+14];
-            result->data[0][i+15] = -mat->data[0][i+15];
-            //unrolling doesn't seem to increase performance that much
-        }
-        for (int i = unroll; i < total; i += 1) {
+        for (int i = 0; i < total; i += 1) {
             result->data[0][i] = -mat->data[0][i];
         }
     } else {
-    #pragma omp parallel for
+        #pragma omp parallel for
         for (int i = 0; i < unroll; i += count) {
             result->data[0][i] = -mat->data[0][i];
             result->data[0][i+1] = -mat->data[0][i+1];
@@ -558,27 +593,27 @@ int abs_matrix(matrix *result, matrix *mat) {
     }
     int total = mat->cols * mat->rows;
     if (total < 10001) {
-        for (int r = 0; r < mat->rows; r++) { //can we assume dims are good?
-            for (int c = 0; c < mat->cols; c++) {
-                double matval = mat->data[r][c];
-                if (matval < 0) {
-                    matval *= -1;
-                }
-                result->data[r][c] = matval;
+        for (int i = 0; i < total; i += 1) {
+            double matval = mat->data[0][i];
+            if (matval < 0) {
+                //result->data[0][i] = matval;
+                matval *= -1;
             }
+            result->data[0][i] = matval;
         }
     } else {
     #pragma omp parallel for
-        for (int r = 0; r < mat->rows; r++) { //can we assume dims are good?
-            for (int c = 0; c < mat->cols; c++) {
-                double matval = mat->data[r][c];
-                if (matval < 0) {
-                    matval *= -1;
-                }
-                result->data[r][c] = matval;
+        for (int i = 0; i < total; i += 1) {
+            double matval = mat->data[0][i];
+            if (matval < 0) {
+                //result->data[0][i] = matval;
+                matval *= -1;
             }
+            result->data[0][i] = matval;
         }
     }
+
+    
     return 0;
 }
 

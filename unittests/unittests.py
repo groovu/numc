@@ -41,15 +41,15 @@ class TestAdd(TestCase):
         print_speedup(speed_up)
 
     def test_large_add_1drow(self):
-        dp_mat1, nc_mat1 = rand_dp_nc_matrix(2,2, seed=0)
-        dp_mat2, nc_mat2 = rand_dp_nc_matrix(2,2, seed=1)
+        dp_mat1, nc_mat1 = rand_dp_nc_matrix(1,10000, seed=0)
+        dp_mat2, nc_mat2 = rand_dp_nc_matrix(1,10000, seed=1)
         is_correct, speed_up = compute([dp_mat1, dp_mat2], [nc_mat1, nc_mat2], "add")
         self.assertTrue(is_correct)
         print_speedup(speed_up)
 
     def test_large_add_1dcol(self):
-        dp_mat1, nc_mat1 = rand_dp_nc_matrix(1,1000, seed=444)
-        dp_mat2, nc_mat2 = rand_dp_nc_matrix(1, 1000, seed=333)
+        dp_mat1, nc_mat1 = rand_dp_nc_matrix(10,2, seed=444)
+        dp_mat2, nc_mat2 = rand_dp_nc_matrix(10,2, seed=333)
         is_correct, speed_up = compute([dp_mat1, dp_mat2], [nc_mat1, nc_mat2], "add")
         self.assertTrue(is_correct)
         print_speedup(speed_up)
@@ -112,6 +112,15 @@ class TestAbs(TestCase):
         is_correct, speed_up = compute([dp_mat], [nc_mat], "abs")
         self.assertTrue(is_correct)
         print_speedup(speed_up)
+    def test_long_abs(self):
+        # TODO: YOUR CODE HERE
+        rows = 1
+        cols = 1000000
+        dp_mat, nc_mat = rand_dp_nc_matrix(rows, cols, seed=1)
+        is_correct, speed_up = compute([dp_mat], [nc_mat], "abs")
+        self.assertTrue(is_correct)
+        print_speedup(speed_up)
+
 
 class TestNeg(TestCase):
     def test_small_neg(self):

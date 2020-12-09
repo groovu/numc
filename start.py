@@ -2,6 +2,7 @@ import numc as nc
 import dumbpy as dp
 import pdb
 import random
+import utils
 a = nc.Matrix(17,5,3.3)
 da = dp.Matrix(17,5,3.3)
 b = nc.Matrix(5,17,9)
