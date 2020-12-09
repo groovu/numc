@@ -122,6 +122,13 @@ class TestNeg(TestCase):
         is_correct, speed_up = compute([dp_mat], [nc_mat], "neg")
         self.assertTrue(is_correct)
         print_speedup(speed_up)
+    def test_xlarge_neg(self):
+        # TODO: YOUR CODE HERE
+        rows = 10000; cols = 10000
+        dp_mat, nc_mat = rand_dp_nc_matrix(rows, cols, seed=0)
+        is_correct, speed_up = compute([dp_mat], [nc_mat], "neg")
+        self.assertTrue(is_correct)
+        print_speedup(speed_up)
 
 class TestMul(TestCase):
     def test_not_square_mul(self):
@@ -178,7 +185,7 @@ class TestPow(TestCase):
         # TODO: YOUR CODE HERE
         rows = 100; cols = 100
         dp_mat, nc_mat = rand_dp_nc_matrix(rows, cols, seed=0)
-        is_correct, speed_up = compute([dp_mat, 3], [nc_mat, 3], "pow")
+        is_correct, speed_up = compute([dp_mat, 4], [nc_mat, 4], "pow")
         self.assertTrue(is_correct)
         print_speedup(speed_up)
 
@@ -187,6 +194,13 @@ class TestPow(TestCase):
         rows = 1000; cols = 1000
         dp_mat, nc_mat = rand_dp_nc_matrix(rows, cols, seed=0)
         is_correct, speed_up = compute([dp_mat, 3], [nc_mat, 3], "pow")
+        self.assertTrue(is_correct)
+        print_speedup(speed_up)
+    def test_many_small_pow(self):
+        # TODO: YOUR CODE HERE
+        rows = 10; cols = 10
+        dp_mat, nc_mat = rand_dp_nc_matrix(rows, cols, seed=0)
+        is_correct, speed_up = compute([dp_mat, 10], [nc_mat, 10], "pow")
         self.assertTrue(is_correct)
         print_speedup(speed_up)
 class TestGet(TestCase):
