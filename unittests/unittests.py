@@ -1,7 +1,7 @@
-from utils import *
-
-from unittest import TestCase
 import pdb
+from unittest import TestCase
+
+from utils import *
 
 """
 For each operation, you should write tests to test  on matrices of different sizes.
@@ -124,6 +124,22 @@ class TestNeg(TestCase):
         print_speedup(speed_up)
 
 class TestMul(TestCase):
+    def test_not_square_mul(self):
+        rows = 17; cols = 5
+        dp_mat1, nc_mat1 = rand_dp_nc_matrix(rows, cols, seed=0)
+        dp_mat2, nc_mat2 = rand_dp_nc_matrix(cols, rows, seed=1)
+        x = dp_mat1 * dp_mat2
+        y = nc_mat1 * nc_mat2
+        for i in range(0,17):
+            for j in range(0,5):
+                if (x[i][j] != y[i][j]):
+                    print("index @ ", i, j)
+                    print("x:", x[i][j], "y:", y[i][j])
+        is_correct, speed_up = compute([dp_mat1, dp_mat2], [nc_mat1, nc_mat2], "mul")
+        self.assertTrue(is_correct)
+        #print(rand_md5(dp_mat1))
+        print_speedup(speed_up)
+
     def test_small_mul(self):
         # TODO: YOUR CODE HERE
         rows = 10; cols = 10

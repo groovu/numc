@@ -372,7 +372,7 @@ PyObject *Matrix61c_multiply(Matrix61c* self, PyObject *args) {
     }
     rv->shape = get_shape(row, col);
     int code = mul_matrix(rv->mat, self->mat, mat->mat);
-    if (code > 0) {
+    if (code < 0) {
         Matrix61c_dealloc(rv);
         return NULL;
     }

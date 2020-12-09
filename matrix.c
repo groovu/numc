@@ -337,10 +337,11 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
     for (int i = 0; i < mat1->rows; i ++) {
         double * mat1Row = mat1->data[i];
         double * resRow = result->data[i];
-        for (int k = 0; k < mat1->rows; k ++) {
+        for (int k = 0; k < mat1->cols; k ++) {
             double * mat2Row = mat2->data[k];
             double mat1Val = mat1Row[k];
-            for (int j = 0; j < mat1->rows; j ++) {
+            for (int j = 0; j < mat2->cols; j ++) {
+                //printf("mat1Val, mat2Row[j]: %ld * %ld\n", mat1Val, mat2Row[j]);
                 resRow[j] += mat1Val * mat2Row[j];
             }
         }

@@ -2,15 +2,16 @@ import numc as nc
 import dumbpy as dp
 import pdb
 import random
-a = nc.Matrix(2,2,[1.1,2.2,3.3,-4.4])
-b = nc.Matrix(1,3,[1.1,2,-3])
-db = dp.Matrix(1,3,[1,2,-3])
+a = nc.Matrix(17,5,3.3)
+da = dp.Matrix(17,5,3.3)
+b = nc.Matrix(5,17,9)
+db = dp.Matrix(5,17,9)
+
 c = nc.Matrix(3,3,[1,2,3,4,5,6,7,8,-9.9])
 dc = dp.Matrix(3,3,[1,2,3,4,5,6,7,8,-9.9])
 e = nc.Matrix(1,2,[1,2])
 f = nc.Matrix(1,1,[3])
 g = nc.Matrix(2,2,[1,2,3,-4])
-da = dp.Matrix(2,2,[1.1,2.2,3.3,-4.4])
 a.get(0,0)
 # pdb.set_trace()
 # b[0]
@@ -30,7 +31,8 @@ a.get(0,0)
 
 
 
-
+# print("mul check")
+# print("b*c == db * dc", b*c == db*dc)
 
 #set sanity
 z = nc.Matrix(2,2,[1.1,2.2,3.3,-4.4])
@@ -81,3 +83,7 @@ print("is x == dx?", x == dx)
 for i in range(0, 10):
     if (x**i != dx**i):
         print(i)
+
+c = nc.Matrix(1,2,1)
+d = nc.Matrix(2,1,1)
+
