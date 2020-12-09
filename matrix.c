@@ -81,8 +81,6 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
         return -1;
     }
     (*mat)->data[0] = calloc(rows * cols, sizeof(double));
-    //(*mat)->data[0] = malloc(sizeof(double) * rows * cols);
-
     if ((*mat)->data[0] == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "malloc in matrix.c rowdata");
         return -1;
@@ -94,6 +92,12 @@ int allocate_matrix(matrix **mat, int rows, int cols) {
         return -1;
     }
     for (int i = 1; i < rows; i += 1) {
+        //(*mat)->data[i] = (double *) malloc(sizeof(double) * cols);
+        //double * rowdata = (double *) calloc(cols, sizeof(double));
+        // if (NULL == rowdata) {
+        //     PyErr_SetString(PyExc_RuntimeError, "malloc in matrix.c rowdata");
+        //     return -1;
+        // }
         (*mat)->data[i] = (*mat)->data[i - 1] + cols;
     }
 
@@ -124,7 +128,6 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int row_offset, int col_offs
     int alloc_error = allocate_matrix(mat, rows, cols);
     if (alloc_error != 0) {
         PyErr_SetString(PyExc_RuntimeError, "allocate_matrix_ref failed to allocate_matrix");
-        deallocate_matrix(mat);
         return -2;
     }
     (*mat)->parent = from;
@@ -259,132 +262,54 @@ int add_matrix(matrix *result, matrix *mat1, matrix *mat2) {
         return -2;
     }
     int total = mat1->rows * mat1->cols;
-    int count = 4;
+    int count = 16;
     int unroll = total / count * count;
     if (total < 10001) {
-        //#pragma omp parallel for
-        // for (int i = 0; i < unroll; i += count) {
-        //     int j = 0;
-        //     result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j += 1;
-        //     result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j += 1;
-        //     result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j += 1;
-        //     result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j += 1;
-        //     result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j += 1;
-        //     result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j += 1;
-        //     result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j += 1;
-        //     result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j += 1;
-        //     result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j += 1;
-        //     result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j += 1;
-        //     result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j += 1;
-        //     result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j += 1;
-        //     result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j += 1;
-        //     result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j += 1;
-        //     result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j += 1;
-        //     result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j += 1;
-        // }
-        // for (int i = unroll; i < total; i += 1) {
-        //     result->data[0][i] = mat1->data[0][i] + mat2->data[0][i];
-        // }
-        for (int i = 0; i < total; i += 1) {
+        for (int i = 0; i < mat1->rows * mat1->cols; i += 1) {
             result->data[0][i] = mat1->data[0][i] + mat2->data[0][i];
         }
     } else {
-        //omp_set_num_threads(64); should i just let this be automanaged?
-        //omp_set_num_threads(32);
         #pragma omp parallel for
-        for (int i = 0; i < unroll; i +=count) {
-            //result->data[0][i] = mat1->data[0][i] + mat2->data[0][i];
-            __m256d item1;
-            __m256d item2;
-            __m256d res; 
+        for (int i = 0; i < unroll; i += count) {
             int j = 0;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_add_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res);
-            j += 1;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_add_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res); //2
-            j += 1;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_add_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res); 
-            j += 1;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_add_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res); 
-            // j += 1;
-            // item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            // item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            // res  = _mm256_add_pd(item1, item2);
-            // _mm256_storeu_pd(&result->data[0][i+j], res); 
-            // j += 1;
-            // item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            // item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            // res  = _mm256_add_pd(item1, item2);
-            // _mm256_storeu_pd(&result->data[0][i+j], res); 
-            // j += 1;
-            // item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            // item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            // res  = _mm256_add_pd(item1, item2);
-            // _mm256_storeu_pd(&result->data[0][i+j], res); 
-            // j += 1;
-            // item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            // item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            // res  = _mm256_add_pd(item1, item2);
-            // _mm256_storeu_pd(&result->data[0][i+j], res); 
-            // j += 1;
-            // item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            // item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            // res  = _mm256_add_pd(item1, item2);
-            // _mm256_storeu_pd(&result->data[0][i+j], res); 
-            // j += 1;
-            // item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            // item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            // res  = _mm256_add_pd(item1, item2);
-            // _mm256_storeu_pd(&result->data[0][i+j], res); 
-            // j += 1;
-            // item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            // item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            // res  = _mm256_add_pd(item1, item2);
-            // _mm256_storeu_pd(&result->data[0][i+j], res); 
-            // j += 1;
-            // item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            // item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            // res  = _mm256_add_pd(item1, item2);
-            // _mm256_storeu_pd(&result->data[0][i+j], res); 
-            // j += 1;
-            // item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            // item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            // res  = _mm256_add_pd(item1, item2);
-            // _mm256_storeu_pd(&result->data[0][i+j], res); 
-            // j += 1;
-            // item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            // item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            // res  = _mm256_add_pd(item1, item2);
-            // _mm256_storeu_pd(&result->data[0][i+j], res); 
-            // j += 1;
-            // item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            // item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            // res  = _mm256_add_pd(item1, item2);
-            // _mm256_storeu_pd(&result->data[0][i+j], res); 
-            // j += 1;
-            // item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            // item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            // res  = _mm256_add_pd(item1, item2);
-            // _mm256_storeu_pd(&result->data[0][i+j], res); //16
+            result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j+=1;
+            result->data[0][i+j] = mat1->data[0][i+j] + mat2->data[0][i+j]; j+=1;
+        }
+        for (int i = unroll; i < total; i += 1) {
+            result->data[0][i] = mat1->data[0][i] + mat2->data[0][i];
+        }
+        // for (int i = 0; i < unroll; i +=count) {
+        //     result->data[0][i] = mat1->data[0][i] + mat2->data[0][i];
+        //     __m256d item1;
+        //     __m256d item2;
+        //     __m256d res; 
+        //     int j = 0;
+        //     item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
+        //     item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
+        //     res  = _mm256_add_pd(item1, item2);
+        //     _mm256_storeu_pd(&result->data[0][i+j], res);
+        // }
+        // for (int i = unroll; i < total; i += 1){
+        //     __m256d item11 = _mm256_loadu_pd(&mat1->data[0][i]);
+        //     __m256d item22 = _mm256_loadu_pd(&mat2->data[0][i]);
+        //     __m256d res1   = _mm256_add_pd(item11, item22);
+        //     _mm256_storeu_pd(&result->data[0][i], res1);
             
-        }
-        for (int i = unroll; i < total; i += 1){
-            __m256d item1 = _mm256_loadu_pd(&mat1->data[0][i]);
-            __m256d item2 = _mm256_loadu_pd(&mat2->data[0][i]);
-            __m256d res   = _mm256_add_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i], res);
-        }
+        // }
     }
     return 0;
 }
@@ -404,142 +329,16 @@ int sub_matrix(matrix *result, matrix *mat1, matrix *mat2) {
         return -4;
     }//null check
     int total = mat1->rows * mat1->cols;
-    int count = 16;
-    int unroll = total / count * count;
-
     if (total < 10001) {
-        #pragma omp parallel for
-        for (int i = 0; i < unroll; i += count) {
-            int j = 0;
-            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j += 1;
-            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j += 1;
-            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j += 1;
-            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j += 1;
-            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j += 1;
-            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j += 1;
-            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j += 1;
-            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j += 1;
-            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j += 1;
-            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j += 1;
-            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j += 1;
-            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j += 1;
-            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j += 1;
-            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j += 1;
-            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j += 1;
-            result->data[0][i+j] = mat1->data[0][i+j] - mat2->data[0][i+j]; j += 1;
-        }
-        for (int i = unroll; i < total; i += 1) {
+        for (int i = 0; i < total; i += 1) {
             result->data[0][i] = mat1->data[0][i] - mat2->data[0][i];
         }
-
     } else {
-        //omp_set_num_threads(64); should i just let this be automanaged?
-        omp_set_num_threads(16);
         #pragma omp parallel for
-        for (int i = 0; i < unroll; i +=count) {
-            //result->data[0][i] = mat1->data[0][i] + mat2->data[0][i];
-            __m256d item1;
-            __m256d item2;
-            __m256d res; 
-            int j = 0;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_sub_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res);
-            j += 1;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_sub_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res); //2
-            j += 1;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_sub_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res); 
-            j += 1;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_sub_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res); 
-            j += 1;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_sub_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res); 
-            j += 1;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_sub_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res); 
-            j += 1;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_sub_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res); 
-            j += 1;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_sub_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res); 
-            j += 1;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_sub_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res); 
-            j += 1;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_sub_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res); 
-            j += 1;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_sub_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res); 
-            j += 1;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_sub_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res); 
-            j += 1;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_sub_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res); 
-            j += 1;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_sub_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res); 
-            j += 1;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_sub_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res); 
-            j += 1;
-            item1 = _mm256_loadu_pd(&mat1->data[0][i+j]);
-            item2 = _mm256_loadu_pd(&mat2->data[0][i+j]);
-            res  = _mm256_sub_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i+j], res); //16
-            
-        }
-        for (int i = unroll; i < total; i += 1){
-            __m256d item1 = _mm256_loadu_pd(&mat1->data[0][i]);
-            __m256d item2 = _mm256_loadu_pd(&mat2->data[0][i]);
-            __m256d res   = _mm256_sub_pd(item1, item2);
-            _mm256_storeu_pd(&result->data[0][i], res);
+        for (int i = 0; i < total; i += 1) {
+            result->data[0][i] = mat1->data[0][i] - mat2->data[0][i];
         }
     }
-    // if (total < 10001) {
-    //     for (int i = 0; i < total; i += 1) {
-    //         result->data[0][i] = mat1->data[0][i] - mat2->data[0][i];
-    //     }
-    // } else {
-    //     #pragma omp parallel for
-    //     for (int i = 0; i < total; i += 1) {
-    //         result->data[0][i] = mat1->data[0][i] - mat2->data[0][i];
-    //     }
-    // }
     return 0;
 }
 
@@ -559,14 +358,18 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
         PyErr_SetString(PyExc_ValueError, "Mtrx mul dimension mismatch error");
         return -6;
     }
-    //transpose? start
-    double ** trans = malloc(sizeof(double *) * mat2->cols);
-    //trans[0] = calloc(mat2->cols * mat2->rows, sizeof(double));
-    trans[0] = mat2->data[0]; //just point?
-    for (int i = 1; i < mat2->cols; i += 1) {
-        trans[i] = trans[i-1] + mat2->cols;
-    }
-    ///
+    //#pragma omp parallel
+    // for (int r = 0; r < mat1->rows; r++) { //can we assume dims are good?
+    //     for (int c = 0; c < mat2->cols; c++) {
+    //         double sum = 0;
+    //         for (int i = 0; i < mat1->cols; i++) {
+    //             sum += mat1->data[r][i] * mat2->data[i][c];
+    //         }
+    //         result->data[r][c] = sum;
+    //     }
+    // }
+
+    //ikj pure row
     fill_matrix(result, 0);
     int total = mat1-> rows * mat1->cols;
     if (total < 10001) {
@@ -574,7 +377,7 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
             double * mat1Row = mat1->data[i];
             double * resRow = result->data[i];
             for (int k = 0; k < mat1->cols; k ++) {
-                double * mat2Row = trans[k];
+                double * mat2Row = mat2->data[k];
                 double mat1Val = mat1Row[k];
                 for (int j = 0; j < mat2->cols; j ++) {
                     resRow[j] += mat1Val * mat2Row[j];
@@ -587,7 +390,7 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
             double * mat1Row = mat1->data[i];
             double * resRow = result->data[i];
             for (int k = 0; k < mat1->cols; k ++) {
-                double * mat2Row = trans[k];
+                double * mat2Row = mat2->data[k];
                 double mat1Val = mat1Row[k];
                 for (int j = 0; j < mat2->cols; j ++) {
                     resRow[j] += mat1Val * mat2Row[j];
@@ -595,38 +398,8 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
             }
         }
     }
-    /// stop.  Can't tell if transposing first improves anything.  But it doesn't seem to hurt, so I'll keep it.
-
-    // //ikj pure row
-    // fill_matrix(result, 0);
-    // int total = mat1-> rows * mat1->cols;
-    // if (total < 10001) {
-    //     for (int i = 0; i < mat1->rows; i ++) {
-    //         double * mat1Row = mat1->data[i];
-    //         double * resRow = result->data[i];
-    //         for (int k = 0; k < mat1->cols; k ++) {
-    //             double * mat2Row = mat2->data[k];
-    //             double mat1Val = mat1Row[k];
-    //             for (int j = 0; j < mat2->cols; j ++) {
-    //                 resRow[j] += mat1Val * mat2Row[j];
-    //             }
-    //         }
-    //     }
-    // } else {
-    //     #pragma omp parallel for
-    //     for (int i = 0; i < mat1->rows; i ++) {
-    //         double * mat1Row = mat1->data[i];
-    //         double * resRow = result->data[i];
-    //         for (int k = 0; k < mat1->cols; k ++) {
-    //             double * mat2Row = mat2->data[k];
-    //             double mat1Val = mat1Row[k];
-    //             for (int j = 0; j < mat2->cols; j ++) {
-    //                 resRow[j] += mat1Val * mat2Row[j];
-    //             }
-    //         }
-    //     }
-    // }
     return 0;
+
 }
 
 /*
@@ -668,13 +441,11 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
     //I could just use ref2 once, then reuse old ref.  ref2 is needed to deep copy a working matrix.
     //allocate_matrix_ref2(&middle, result, 0, 0, result->rows, result->cols);
     //#pragma omp parallel for
-    omp_set_num_threads(4);
     for (int i = 2; i < pow; i ++) {
         allocate_matrix_ref2(&middle, result, 0, 0, result->rows, result->cols);
         mul_matrix(result, middle, mat);
         deallocate_matrix(middle);
     }
-    omp_set_num_threads(8);
     return 0;
 }
 
