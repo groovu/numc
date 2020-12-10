@@ -137,37 +137,7 @@ int allocate_matrix_ref(matrix **mat, matrix *from, int row_offset, int col_offs
     }
     return 0;
 }
-int allocate_matrix_ref2(matrix **mat, matrix *from, int row_offset, int col_offset,
-                        int rows, int cols) {
-    //dif here is youre making a matrix from a reference matrix.
-    //
-    if (rows <= 0 || cols <= 0) {
-        PyErr_SetString(PyExc_TypeError, "Invalid dims: Row/Col >= 0");
-        return -1;
-    }
 
-    int alloc_error = allocate_matrix(mat, rows, cols);
-    if (alloc_error != 0) {
-        PyErr_SetString(PyExc_MemoryError, "allocate_matrix_ref failed to allocate_matrix");
-        return -2;
-    }
-    (*mat)->parent = from;
-    from->ref_cnt += 1; //Another matrix is reffing from, so +1 ref count.
-    for (int r = 0; r < rows; r ++) {
-        for (int c = 0; c < cols; c ++) {
-            //double val = 0;
-            //clever way to make this into a single loop?
-            (*mat)->data[r][c] = from->data[r+row_offset][c+col_offset];
-            //(*mat)->data[r][c] = val;
-        }
-    }
-    if (rows == 1 || cols == 1) {
-        (*mat)->is_1d = 1; //nonzero == 1dim.
-    } else {
-        (*mat)->is_1d = 0; //0 == 2 dim.
-    }
-    return 0;
-}
 
 /*
  * This function will be called automatically by Python when a numc matrix loses all of its
@@ -258,7 +228,10 @@ void set(matrix *mat, int row, int col, double val) {
  * Set all entries in mat to val
  */
 void fill_matrix(matrix *mat, double val) {
-    for (int i = 0; i < mat->rows * mat->cols; i += 1) {
+    for (int i = 0; i < mat->rows * mat->cols / 2 * 2; i += 2) {
+        mat->data[0][i] = val; mat->data[0][i+1] = val;
+    }
+    for (int i = mat->rows * mat->cols / 2 * 2; i < mat->rows * mat->cols; i += 1) {
         mat->data[0][i] = val;
     }
 }
@@ -387,7 +360,6 @@ int sub_matrix(matrix *result, matrix *mat1, matrix *mat2) {
  * Remember that matrix multiplication is not the same as multiplying individual elements.
  */
 int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
-    /* TODO: YOUR CODE HERE */
     if (NULL == mat1 || NULL == mat2) {
         PyErr_SetString(PyExc_TypeError, "mul_matrix: null input matrices");
         return -7;
@@ -396,50 +368,31 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
         PyErr_SetString(PyExc_ValueError, "Mtrx mul dimension mismatch error");
         return -6;
     }
-    //#pragma omp parallel
-    // for (int r = 0; r < mat1->rows; r++) { //can we assume dims are good?
-    //     for (int c = 0; c < mat2->cols; c++) {
-    //         double sum = 0;
-    //         for (int i = 0; i < mat1->cols; i++) {
-    //             sum += mat1->data[r][i] * mat2->data[i][c];
-    //         }
-    //         result->data[r][c] = sum;
-    //     }
-    // }
-
-    //ikj pure row
-    fill_matrix(result, 0);
+    //transpose? start
+    double ** trans = malloc(sizeof(double *) * mat2->cols);
+    trans[0] = mat2->data[0]; //just point?
+    for (int i = 1; i < mat2->cols; i += 1) {
+        trans[i] = trans[i-1] + mat2->cols;
+    }
+    ///
+    //fill_matrix(result, 0);
     int total = mat1-> rows * mat1->cols;
-    if (total < 10001) {
-        for (int i = 0; i < mat1->rows; i ++) {
-            double * mat1Row = mat1->data[i];
-            double * resRow = result->data[i];
-            for (int k = 0; k < mat1->cols; k ++) {
-                double * mat2Row = mat2->data[k];
-                double mat1Val = mat1Row[k];
-                for (int j = 0; j < mat2->cols; j ++) {
-                    resRow[j] += mat1Val * mat2Row[j];
-                }
-            }
-        }
-    } else {
-        #pragma omp parallel for
-        for (int i = 0; i < mat1->rows; i ++) {
-            double * mat1Row = mat1->data[i];
-            double * resRow = result->data[i];
-            for (int k = 0; k < mat1->cols; k ++) {
-                double * mat2Row = mat2->data[k];
-                double mat1Val = mat1Row[k];
-                for (int j = 0; j < mat2->cols; j ++) {
-                    resRow[j] += mat1Val * mat2Row[j];
-                }
+    memset(result->data[0], 0, total * sizeof(double));
+    #pragma omp parallel for if (total >= 10000)
+    for (int i = 0; i < mat1->rows; i ++) {
+        double * mat1Row = mat1->data[i];
+        double * resRow = result->data[i];
+        for (int k = 0; k < mat1->cols; k ++) {
+            double * mat2Row = trans[k];
+            double mat1Val = mat1Row[k];
+            for (int j = 0; j < mat2->cols; j ++) {
+                resRow[j] += mat1Val * mat2Row[j];
             }
         }
     }
+    free(trans);
     return 0;
-
 }
-
 /*
  * Store the result of raising mat to the (pow)th power to `result`.
  * Return 0 upon success and a nonzero value upon failure.
@@ -455,8 +408,10 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
         PyErr_SetString(PyExc_ValueError, "pow_matrix not square or power is negative");
         return -9;
     }
+    int rows = mat->rows; int cols = mat->cols;
+    int total = rows * cols;
     if (pow == 0) {
-        fill_matrix(result, 0);
+        memset(result->data[0], 0, total * sizeof(double));
         #pragma omp parallel for
         for (int i = 0; i < mat->cols; i += 1) {
             result->data[i][i] = 1;
@@ -479,23 +434,39 @@ int pow_matrix(matrix *result, matrix *mat, int pow) {
     } else if (pow > 2) {
         //FIXME error check this too
         mul_matrix(result, mat, mat);
-        int rows = mat->rows; int cols = mat->cols;
-        int total = rows * cols;
+
         matrix * temp = NULL;
         allocate_matrix(&temp, rows, cols);
-        // for (int i = 0; i < total; i += 1) { // copy result to temp
-        //     temp->data[0][i] = result->data[0][i];
-        // }
+
+        double ** trans = malloc(sizeof(double *) * mat->cols);
+        trans[0] = mat->data[0]; //just point?
+        for (int i = 1; i < mat->cols; i += 1) {
+            trans[i] = trans[i-1] + mat->cols;
+        }
+
         omp_set_num_threads(4);
         for (int i = 2; i < pow; i ++) {
-            #pragma omp parallel for
+            #pragma omp parallel for if (total >= 10000)
             for (int i = 0; i < total; i += 1) { // copy result to temp
                 temp->data[0][i] = result->data[0][i];
             }
-            mul_matrix(result, temp, mat);
+
+            memset(result->data[0] ,0 ,total * sizeof(double));
+            #pragma omp parallel for if (total >= 10000)
+            for (int i = 0; i < temp->rows; i += 1) {
+                double * mat1Row = temp->data[i];
+                double * resRow = result->data[i];
+                for (int k = 0; k < temp->cols; k += 1) {
+                    double * mat2Row = trans[k];
+                    double mat1Val = mat1Row[k];
+                    for (int j = 0; j < mat->cols; j += 1) {
+                        resRow[j] += mat1Val * mat2Row[j];
+                    }
+                }
+            }
         }
         omp_set_num_threads(8);
-
+        free(trans);
         deallocate_matrix(temp);
     }
 
