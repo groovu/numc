@@ -368,29 +368,57 @@ int mul_matrix(matrix *result, matrix *mat1, matrix *mat2) {
         PyErr_SetString(PyExc_ValueError, "Mtrx mul dimension mismatch error");
         return -6;
     }
-    //transpose? start
-    double ** trans = malloc(sizeof(double *) * mat2->cols);
-    trans[0] = mat2->data[0]; //just point?
-    for (int i = 1; i < mat2->cols; i += 1) {
-        trans[i] = trans[i-1] + mat2->cols;
-    }
-    ///
-    //fill_matrix(result, 0);
+    // //transpose? start
+    // double ** trans = malloc(sizeof(double *) * mat2->cols);
+    // trans[0] = mat2->data[0]; //just point?
+    // for (int i = 1; i < mat2->cols; i += 1) {
+    //     trans[i] = trans[i-1] + mat2->cols;
+    // }
+    // ///
+    // //fill_matrix(result, 0);
+    // int total = mat1-> rows * mat1->cols;
+    // memset(result->data[0], 0, total * sizeof(double));
+    // #pragma omp parallel for if (total >= 10000)
+    // for (int i = 0; i < mat1->rows; i ++) {
+    //     double * mat1Row = mat1->data[i];
+    //     double * resRow = result->data[i];
+    //     for (int k = 0; k < mat1->cols; k ++) {
+    //         double * mat2Row = trans[k];
+    //         double mat1Val = mat1Row[k];
+    //         for (int j = 0; j < mat2->cols; j ++) {
+    //             resRow[j] += mat1Val * mat2Row[j];
+    //         }
+    //     }
+    // }
+    // free(trans);
+    fill_matrix(result, 0);
     int total = mat1-> rows * mat1->cols;
-    memset(result->data[0], 0, total * sizeof(double));
-    #pragma omp parallel for if (total >= 10000)
-    for (int i = 0; i < mat1->rows; i ++) {
-        double * mat1Row = mat1->data[i];
-        double * resRow = result->data[i];
-        for (int k = 0; k < mat1->cols; k ++) {
-            double * mat2Row = trans[k];
-            double mat1Val = mat1Row[k];
-            for (int j = 0; j < mat2->cols; j ++) {
-                resRow[j] += mat1Val * mat2Row[j];
+    if (total < 10001) {
+        for (int i = 0; i < mat1->rows; i ++) {
+            double * mat1Row = mat1->data[i];
+            double * resRow = result->data[i];
+            for (int k = 0; k < mat1->cols; k ++) {
+                double * mat2Row = mat2->data[k];
+                double mat1Val = mat1Row[k];
+                for (int j = 0; j < mat2->cols; j ++) {
+                    resRow[j] += mat1Val * mat2Row[j];
+                }
+            }
+        }
+    } else {
+        #pragma omp parallel for
+        for (int i = 0; i < mat1->rows; i ++) {
+            double * mat1Row = mat1->data[i];
+            double * resRow = result->data[i];
+            for (int k = 0; k < mat1->cols; k ++) {
+                double * mat2Row = mat2->data[k];
+                double mat1Val = mat1Row[k];
+                for (int j = 0; j < mat2->cols; j ++) {
+                    resRow[j] += mat1Val * mat2Row[j];
+                }
             }
         }
     }
-    free(trans);
     return 0;
 }
 /*
